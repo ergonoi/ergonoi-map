@@ -120,6 +120,14 @@
   #det .hrow .stk i { display:block; width:6px; height:22px; border-radius:1px; }
   #det .dh input { width:100%; font:600 20px var(--font-head); border:0; border-bottom:.5px solid transparent; background:transparent; color:var(--fg); outline:none; padding:2px 0; cursor:text; }
   #det .dh input:hover { border-bottom-color:var(--line); }
+  /* a clear button in the name and the note, shown while the field has focus */
+  #det .fwrap { position:relative; display:block; flex:1; min-width:0; }
+  #det .fwrap input { padding-right:28px; }
+  #det .fwrap.note { margin:0 20px; } #det .fwrap.note textarea { width:100%; margin:0; padding-right:30px; }
+  #det .fclear { position:absolute; right:2px; top:50%; transform:translateY(-50%); border:0; background:none; padding:6px; min-height:0; min-width:0; color:var(--muted); line-height:0; display:none; }
+  #det .fwrap.note .fclear { top:6px; transform:none; }
+  #det .fwrap:focus-within .fclear { display:block; }
+  #det .fclear:hover { color:var(--fg); }
   #det .dh input:focus { border-bottom-color:var(--fg); }
   #det .dh .sub { color:var(--muted); font-size:14px; }
   #det .dh .x { border:0; min-width:var(--tap); font-size:22px; color:var(--fg2); }
@@ -368,10 +376,12 @@
     name: "οὐθείς Map",
     storageKey: "outheis-map",
     file: "outheis-map",
-    // Group colours: the agenda's six colours and blue; grey is "no group".
-    // Group colours: the list from Miro; any other colour can be chosen besides.
-    palette: ["#218380", "#97EAD2", "#7FB9E8", "#2B3BD6", "#B39DDB", "#C490D1", "#D64090", "#F4A9C0", "#FF2E00", "#F97316", "#FFB48A", "#FFB400", "#F5DE5E", "#9CCB6C", "#3F9E4D", "#A0784A", "#DEC9A6"],
-    colorNames: { "#218380": "Teal", "#97EAD2": "Aqua", "#7FB9E8": "Light blue", "#2B3BD6": "Blue", "#B39DDB": "Light violet", "#C490D1": "Wisteria", "#D64090": "Magenta", "#F4A9C0": "Light pink", "#FF2E00": "Scarlet", "#F97316": "Orange", "#FFB48A": "Peach", "#FFB400": "Amber", "#F5DE5E": "Light yellow", "#9CCB6C": "Light green", "#3F9E4D": "Green", "#A0784A": "Gold brown", "#DEC9A6": "Beige", "#460A46": "Amethyst" },
+    // Group colours: only strong ones, since a node shows its colour as a frame; pale tones
+    // and fine nuances cannot be told apart there. The house colours first (Teal, Amethyst,
+    // Wisteria, Scarlet, Amber, Blue; Pearl Aqua is too light for a frame), then as many more,
+    // chosen to stay apart from them and from each other. Any other colour can be chosen besides.
+    palette: ["#218380", "#460A46", "#C490D1", "#FF2E00", "#FFB400", "#2B3BD6", "#2B8A3E", "#F76707", "#D6336C", "#7048E8", "#8D5524", "#74B816", "#1098AD", "#495057"],
+    colorNames: { "#218380": "Teal", "#460A46": "Amethyst", "#C490D1": "Wisteria", "#FF2E00": "Scarlet", "#FFB400": "Amber", "#2B3BD6": "Blue", "#2B8A3E": "Green", "#F76707": "Orange", "#D6336C": "Raspberry", "#7048E8": "Violet", "#8D5524": "Brown", "#74B816": "Lime", "#1098AD": "Cyan", "#495057": "Graphite", "#97EAD2": "Aqua" },
     none: "#B8B4B4"
   };
   // ======================================================================
@@ -470,7 +480,7 @@
   // ---------- Example (neutral content) ----------
   function demo() {
     state = { nodes: [], edges: [], counter: 1, legend: {}, stickers: {} };
-    const BL = "#D64090", TE = "#3F9E4D", AB = "#F97316", WI = "#B39DDB";
+    const BL = "#D6336C", TE = "#2B8A3E", AB = "#F76707", WI = "#7048E8";
     state.legend = { [BL]: "Goal", [TE]: "Places", [AB]: "Things to do", [WI]: "Open questions" };
     const add = (t, c, p) => { const n = { id: uid(), title: t, color: c, x: CX + (Math.random() - .5) * 900, y: CY + (Math.random() - .5) * 700, pinned: false }; state.nodes.push(n); if (p) state.edges.push({ id: uid(), from: p.id, to: n.id, directed: false }); return n; };
     const root = add("Summer trip", BL);
@@ -663,7 +673,7 @@
       ${FILE.handle ? `<button type="button" class="mrow" data-f="disc">Disconnect the file</button>` : ""}
       <button type="button" class="mrow" data-f="ver">${ICO.ver}Versions<span class="r">${versionCount || ""}</span></button>
       <button type="button" class="mrow" data-f="imp">${ICO.imp}Import Markmap …</button>
-      <div class="narrow"><div class="sepl"></div><button type="button" class="mrow" data-f="set">${ICO.set}Settings</button><p class="hint">Version 0.4.5</p></div>`;
+      <div class="narrow"><div class="sepl"></div><button type="button" class="mrow" data-f="set">${ICO.set}Settings</button><p class="hint">Version 0.4.6</p></div>`;
     box.innerHTML = h;
   }
   let gPress = null, gPressAt = 0, gPressKey = "";
@@ -1054,6 +1064,7 @@
       }
     }, anchor);
   }
+  const CLEAR = '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="currentColor"/><path d="M5.5 5.5l5 5M10.5 5.5l-5 5" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>';
   function renderDetail() {
     const box = $("det"); if (!box) return;
     if (box.contains(document.activeElement) && /INPUT|TEXTAREA/.test(document.activeElement.tagName)) return; // not while typing
@@ -1071,15 +1082,16 @@
     const others = links.map(e => ({ e, m: nodeById(e.from === n.id ? e.to : e.from) })).filter(o => o.m);
     // The heading: the group as a stick (click: another group) and the name (click: edit).
     const arrow = o => o.e.both ? " ↔" : o.e.directed ? (o.e.from === n.id ? " →" : " ←") : "";
-    box.innerHTML = `<div class="grab"></div><div class="dh"><div class="tw"><div class="cap">Node</div><div class="hrow"><button class="stk" data-dgroup="1" title="Group: ${esc(groupName(n.color) || "unnamed")}. Click to change" aria-label="Group ${esc(groupName(n.color) || "unnamed")}, change"><i style="background:${esc(n.color)}"></i></button><input id="detTitle" value="${esc(n.title)}" aria-label="Name of the node" title="Click to edit"></div><div class="sub">${esc(groupName(n.color) || "no group")} · ${others.length} ${others.length === 1 ? "link" : "links"}${n.pinned ? " · pinned" : ""}</div></div>${x}</div>
+    box.innerHTML = `<div class="grab"></div><div class="dh"><div class="tw"><div class="cap">Node</div><div class="hrow"><button class="stk" data-dgroup="1" title="Group: ${esc(groupName(n.color) || "unnamed")}. Click to change" aria-label="Group ${esc(groupName(n.color) || "unnamed")}, change"><i style="background:${esc(n.color)}"></i></button><span class="fwrap"><input id="detTitle" value="${esc(n.title)}" aria-label="Name of the node" title="Click to edit"><button type="button" class="fclear" data-fclear="detTitle" aria-label="Clear the name" title="Clear">${CLEAR}</button></span></div><div class="sub">${esc(groupName(n.color) || "no group")} · ${others.length} ${others.length === 1 ? "link" : "links"}${n.pinned ? " · pinned" : ""}</div></div>${x}</div>
       ${others.length ? `<div class="kv">${others.map((o, i) => `<div class="k">${i ? "" : "Links"}</div><div><button class="v" data-dgo="${esc(o.m.id)}">${vstick(o.m.color)}${esc(o.m.title)}${arrow(o)}${o.e.label ? ` <span style="color:var(--muted);font-size:14px">· ${esc(o.e.label)}</span>` : ""}</button></div>`).join("")}</div>` : ""}
-      <h4>Note</h4><textarea id="detNote" maxlength="5000" placeholder="More about this node: text, a link, an address …">${esc(n.note || "")}</textarea>
+      <h4>Note</h4><span class="fwrap note"><textarea id="detNote" maxlength="5000" placeholder="More about this node: text, a link, an address …">${esc(n.note || "")}</textarea><button type="button" class="fclear" data-fclear="detNote" aria-label="Clear the note" title="Clear">${CLEAR}</button></span>
       <div class="acts"><button class="primary" data-dnew="1">+ Linked node</button><button data-dlink="1">Link to …</button><button class="danger" data-ddel="1">Delete</button></div>
       <div class="more"><button data-dpin="1">${n.pinned ? "Release the pin" : "Keep in place (pin)"}</button><button data-dcenter="1" title="Untangle with this node in the middle">Untangle around it</button></div>`;
   }
   $("det").addEventListener("click", ev => {
     const b = ev.target.closest("button"); if (!b) return;
     const ids = [...sel].filter(id => nodeById(id)), n = ids.length === 1 ? nodeById(ids[0]) : null;
+    if (b.dataset.fclear) { const f = $(b.dataset.fclear); f.value = ""; f.focus(); return; }
     if (b.dataset.dx) { sel.clear(); drawNodes(); closeDetail(); return; }
     if (b.dataset.dgroup) { groupChooser(ids, b); return; }
     if (b.dataset.dgo) { sel.clear(); sel.add(b.dataset.dgo); drawNodes(); drawEdges(); renderDetail(); const m = nodeById(b.dataset.dgo); const r = vp.getBoundingClientRect(); const p = toWorld(r.left + r.width / 2, r.top + r.height / 2); if (Math.abs(p.x - m.x) * view.s > r.width / 3 || Math.abs(p.y - m.y) * view.s > r.height / 3) { view.x += (p.x - m.x) * view.s; view.y += (p.y - m.y) * view.s; applyView(); } return; }
@@ -1092,6 +1104,8 @@
       b.dataset.armed = "1"; b.textContent = "Tap again: delete with " + ids.reduce((s, id) => s + edgesOf(id).length, 0) + " links";
     }
   });
+  // the clear button must not take the focus from its field (it is shown only while focused)
+  $("det").addEventListener("pointerdown", ev => { if (ev.target.closest(".fclear")) ev.preventDefault(); });
   $("det").addEventListener("change", ev => {
     const ids = [...sel], n = ids.length === 1 ? nodeById(ids[0]) : null; if (!n) return;
     if (ev.target.id === "detTitle") { const v = ev.target.value.trim(); if (v && v !== n.title) { checkpoint("Renamed"); n.title = v; save(); drawNodes(); drawEdges(); } }

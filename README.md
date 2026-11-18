@@ -65,9 +65,11 @@ and the details come up as a sheet from below; on phones Map and Text are at the
 
 A group is a name with a colour. Tap a group in the left column to hide or show its nodes,
 press and hold to show only this one; which groups are hidden is kept in the browser, not in
-the map. *Edit* renames the groups and changes their colours: seventeen colours are offered
-(the list from Miro), *Other colour …* opens the browser's colour chooser for any other; a
-group keeps its place. The details of a node list its links with a short vertical bar in the
+the map. A click on its colour changes the colour, a click on its name renames it. Fourteen strong
+colours are offered, since a node shows its colour only as a frame: the house colours
+(Teal, Amethyst, Wisteria, Scarlet, Amber, Blue) and eight more chosen to stay apart from
+them and from each other; *Other colour …* opens the browser's colour chooser for any
+other. A group keeps its place. The details of a node list its links with a short vertical bar in the
 colour of the linked node's group. The heading of the details is the node itself: its group
 as a vertical bar (click: another group) and its name (click: edit).
 
