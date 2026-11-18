@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>οὐθείς Map</title>
-<meta name="theme-color" content="#97EAD2">
+<title>ergonoi Map</title>
+<meta name="theme-color" content="#E2C8E8">
 <meta name="description" content="An open mind map, lightweight and confidential by design.">
 
 <style>
@@ -441,7 +441,7 @@
 <header>
   <div class="row">
     <button id="btnMenu" class="ib" aria-label="Groups and file" title="Groups and file"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
-    <button id="titleBtn" aria-haspopup="menu" title="Map"><span class="vwrap"><span class="brand">οὐθείς Map</span><span id="mapName">Unsaved map</span></span><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg></button>
+    <button id="titleBtn" aria-haspopup="menu" title="Map"><span class="vwrap"><span class="brand">ergonoi Map</span><span id="mapName">Unsaved map</span></span><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg></button>
     <div id="status"><span class="dot" id="stDot"></span><span class="txt" id="stSaved"></span><span class="txt" id="stFile"></span></div>
     <nav class="vtabs" aria-label="View"><button class="tab" id="tabMap" aria-pressed="true">Map</button><button class="tab" id="tabList" aria-pressed="false">List</button><button class="tab" id="tabText" aria-pressed="false">Text</button></nav>
     <button id="btnAdd" title="New node" aria-label="New node"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>+ Node</span></button>
@@ -473,7 +473,7 @@
   <textarea id="mapText" spellcheck="false" autocapitalize="none" autocomplete="off" autocorrect="off" aria-label="The map as text"></textarea>
 </div>
 <div id="empty" class="hidden"><div class="ew">
-  <h2><span class="brand">οὐθείς Map</span> – an open mind map</h2>
+  <h2><span class="brand">ergonoi Map</span> – an open mind map</h2>
   <p>Follow your thoughts, make them tangible, give them a structure and reveal the links between them. Lightweight and confidential by design: the map is kept in this browser and, when you save it, in a file of your own. Nothing is sent anywhere.</p>
   <button type="button" class="er" id="emptyAdd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span><b>Start with a first node</b><small>Name it, then add more nodes and links</small></span><svg class="chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg></button>
   <button type="button" class="er" id="emptyList"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3.5" y="4.5" width="7" height="15" rx="1"/><rect x="13.5" y="4.5" width="7" height="10" rx="1"/></svg><span><b>Start with groups</b><small>Write lists in the List view, the map draws them</small></span><svg class="chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg></button>
@@ -553,7 +553,7 @@
   // BRAND — name and group colours. Changed together with the CSS block.
   // ======================================================================
   const BRAND = {
-    name: "οὐθείς Map",
+    name: "ergonoi Map",
     storageKey: "outheis-map",
     file: "outheis-map",
     // Group colours: only strong ones, since a node shows its colour as a frame; pale tones
@@ -569,7 +569,7 @@
   // the same under both names.
   // The default theme is set at build time (brand.json); a choice made in Settings is kept
   // per browser and wins over it.
-  const DEFAULT_THEME = "outheis";
+  const DEFAULT_THEME = "ergonoi";
   const ergonoi = () => { let t = ""; try { t = localStorage.getItem(BRAND.storageKey + ".theme") || ""; } catch (err) { /* no storage */ } return (t || DEFAULT_THEME) === "ergonoi"; };
   function applyTheme() {
     const on = ergonoi(), name = on ? "ergonoi Map" : "οὐθείς Map";
