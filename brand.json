@@ -1,0 +1,7 @@
+{
+  "default": "outheis",
+  "themes": {
+    "outheis": { "name": "οὐθείς Map", "color": "#97EAD2" },
+    "ergonoi": { "name": "ergonoi Map", "color": "#E2C8E8" }
+  }
+}

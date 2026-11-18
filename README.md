@@ -4,7 +4,9 @@ A mind map in a single HTML file: nodes in groups, links with or without directi
 for every node. It runs in the browser without a server and without loading anything from
 the network.
 
-Download `dist/outheis-map.html` and open it.
+Open it at https://outheis-labs.github.io/outheis-map/ and, if you like, install it as an
+app from there (see *Install as an app*). Or download `dist/outheis-map.html` and open the
+file; it works the same.
 
 ## Layout
 
@@ -122,6 +124,30 @@ more lie in hidden groups. Enter or ↓ goes to the next match, Shift+Enter or �
 previous one: it is selected and moved into view, on computers with its details on the
 right. Escape or the arrow on the left closes the search.
 
+## Selecting several
+
+- **Mouse:** Ctrl+click (Cmd+click on a Mac) adds a node to the selection or takes it out.
+  Shift and drag on the canvas draws a frame; what it touches is selected, with Ctrl/Cmd
+  added to the selection.
+- **Touch:** hold a node for half a second: the header shows "1 selected", and every tap
+  on a node adds it or takes it out. A tap beside the nodes keeps the selection; × ends it.
+- **Search:** the square at the end of the search field selects all matches.
+
+The details then show the number of nodes and their groups: one choice sets the group of
+all of them, one Undo takes it back. *Keep in place* and *Delete* act on all of them too.
+On a phone the header has *Group* directly; ⋯ opens the details as a sheet.
+
+## Install as an app
+
+The page at https://outheis-labs.github.io/outheis-map/ can be installed: in Safari on
+iPhone and iPad with *Share → Add to Home Screen*, in Chrome and Edge from the install
+symbol in the address bar or the menu. It then starts in its own window, with its icon,
+and without a network: a service worker keeps the page on the device, takes a new version
+from the network when there is one, and falls back to the copy on the device after three
+seconds. Maps never leave the device; they are kept in the browser's storage as before,
+for this address. A map kept in the browser under the downloaded file is not seen at the
+address, and the other way round; *File → Save to a file* and *Open …* carry a map across.
+
 ## ergonoi theme
 
 *Settings and help → Display → ergonoi theme* (per browser) shows the product as
@@ -132,8 +158,21 @@ storage are the same under both names.
 ## Building
 
 `src/map.src.html` is the source; `python3 build.py` embeds the fonts and writes
-`dist/outheis-map.html`. Product name and colours sit in one marked block at the top of the
-source (CSS) and in the `BRAND` object (script).
+
+- `dist/outheis-map.html`: the single file, kept in the repository;
+- `site/`: the same page as `index.html` with manifest, service worker (`src/sw.js`) and
+  icons. `.github/workflows/pages.yml` builds it on every push to main and publishes it on
+  GitHub Pages (in the repository settings, Pages → Source: GitHub Actions).
+
+`brand.json` sets the default theme, `outheis` or `ergonoi`, and with it the name and
+colour of the page and of the installed app and its icons. The choice in *Settings* still
+wins per browser, so either build shows the other theme on request. The icons are rendered
+from `icons/src/icon.html` by `node icons/render.mjs` (both themes, 32 to 512 px) and kept
+in `icons/`. Colours of the themes sit in one marked block at the top of the source (CSS)
+and in the `BRAND` object (script).
+
+A clone that is to be *ergonoi Map* by default changes one line, `"default": "ergonoi"`
+in `brand.json`, and builds; see `docs/rebrand.md`.
 
 ## Fonts
 

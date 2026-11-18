@@ -4,7 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>@@BRAND_TITLE@@</title>
-<meta name="theme-color" content="#97EAD2">
+<meta name="theme-color" content="@@THEME_COLOR@@">
+@@PWA_HEAD@@
 <style>
   /* ======================================================================
      BRAND — everything that names or colours the product lives here.
@@ -210,6 +211,15 @@
   #searchQ::-webkit-search-cancel-button { display:none; }
   #searchCount { flex:none; font-size:13px; color:var(--fg2); min-width:4.5em; text-align:right; padding:0 4px; white-space:nowrap; }
   header.searching .row > :not(#hsearch):not(#btnMenu) { display:none !important; }
+  /* Several nodes at once (README, Selecting several): on a touch screen the header shows the
+     selection and its group; a frame drawn with Shift selects with the mouse. */
+  #hmulti { display:flex; align-items:center; gap:4px; flex:1; min-width:0; }
+  #hmulti.hidden { display:none; }
+  #multiCount { flex:1; min-width:0; font:600 17px var(--font-head); color:var(--header-fg); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #multiGroup { flex:none; }
+  header.multi .row > :not(#hmulti):not(#btnMenu) { display:none !important; }
+  #lasso { position:fixed; z-index:6; display:none; border:1px solid var(--select); background:color-mix(in srgb, var(--select) 8%, transparent); pointer-events:none; }
+  .node { -webkit-touch-callout:none; }
   .node.dim { opacity:.22; }
   .node.hit { box-shadow:0 0 0 3px rgba(255,180,0,.55); }
   .node.hit.cur { box-shadow:0 0 0 4px var(--warn); }
@@ -358,11 +368,13 @@
     <button id="btnAdd" title="New node" aria-label="New node"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>+ Node</span></button>
     <button id="btnDet" class="ib" title="Show or hide the details column (\)" aria-label="Details column" aria-pressed="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="1.5"/><path d="M14.5 4.5v15"/></svg></button>
     <button id="btnSearch" class="ib" title="Find a node (/)" aria-label="Find a node"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/></svg></button>
-    <div id="hsearch" class="hidden"><button id="searchBack" class="ib" title="Close the search (Esc)" aria-label="Close the search"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><input id="searchQ" type="search" placeholder="Find a node" autocomplete="off" aria-label="Find a node"><span id="searchCount" aria-live="polite"></span><button id="searchPrev" class="ib" title="Previous (Shift+Enter)" aria-label="Previous match"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button><button id="searchNext" class="ib" title="Next (Enter)" aria-label="Next match"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button></div>
+    <div id="hsearch" class="hidden"><button id="searchBack" class="ib" title="Close the search (Esc)" aria-label="Close the search"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><input id="searchQ" type="search" placeholder="Find a node" autocomplete="off" aria-label="Find a node"><span id="searchCount" aria-live="polite"></span><button id="searchPrev" class="ib" title="Previous (Shift+Enter)" aria-label="Previous match"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button><button id="searchNext" class="ib" title="Next (Enter)" aria-label="Next match"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button><button id="searchAll" class="ib" title="Select all matches" aria-label="Select all matches"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="2" stroke-dasharray="3 2.4"/><path d="M8 12.5l3 3 5-6"/></svg></button></div>
+    <div id="hmulti" class="hidden"><button id="multiDone" class="ib" title="End the selection (Esc)" aria-label="End the selection"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><span id="multiCount" aria-live="polite"></span><button id="multiGroup" title="Group of the selected nodes">Group</button><button id="multiMore" class="ib" title="More for the selected nodes" aria-label="More for the selected nodes"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg></button></div>
     <button id="btnSettings" class="ib" title="Settings and help" aria-label="Settings and help"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
   </div>
 </header>
 <div id="sdim" class="hidden"></div>
+<div id="lasso"></div>
 <aside id="side" aria-label="Groups and file"></aside>
 <aside id="det" class="hidden" aria-label="Node"></aside>
 <div id="tools"><button id="btnArrange" title="Arrange the map">Arrange</button><button id="btnFit" title="Fit the whole map (0)" aria-label="Fit"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button></div>
@@ -426,7 +438,8 @@
     <li>Drag the blue handle of a selected node onto another to link them, or onto free space for a new linked node.</li>
     <li>Double click a node: a new node of its group beside it. Double click the canvas: a new node there.</li>
     <li>A click on a link sets its label, arrow and line; directions are seen from the selected node.</li>
-    <li>Keys: 0 fits the map, \ folds both columns, Delete removes the selection, Ctrl/Cmd+Z undoes; Ctrl/Cmd+click selects several.</li>
+    <li>Keys: 0 fits the map, \ folds both columns, Delete removes the selection, Ctrl/Cmd+Z undoes.</li>
+    <li>Several nodes: Ctrl/Cmd+click adds or removes one; Shift+drag on the canvas draws a frame around them (with Ctrl/Cmd: added to the selection); on a touch screen, hold a node, then tap more. In the search, the square selects all matches. The details then set the group of all of them at once.</li>
     <li>Text shows the map as lines; Apply takes an edit over.</li>
   </ul>
   <h3>More</h3>
@@ -458,9 +471,12 @@
   // ======================================================================
   // The ergonoi theme switches the name with the look (html.ergonoi); maps and storage are
   // the same under both names.
-  const ergonoi = () => { try { return localStorage.getItem(BRAND.storageKey + ".theme") === "ergonoi"; } catch (err) { return false; } };
+  // The default theme is set at build time (brand.json); a choice made in Settings is kept
+  // per browser and wins over it.
+  const DEFAULT_THEME = "@@DEFAULT_THEME@@";
+  const ergonoi = () => { let t = ""; try { t = localStorage.getItem(BRAND.storageKey + ".theme") || ""; } catch (err) { /* no storage */ } return (t || DEFAULT_THEME) === "ergonoi"; };
   function applyTheme() {
-    const on = ergonoi(), name = on ? "ergonoi Map" : BRAND.name;
+    const on = ergonoi(), name = on ? "ergonoi Map" : "οὐθείς Map";
     document.documentElement.classList.toggle("ergonoi", on);
     document.title = name;
     document.querySelector('meta[name="theme-color"]').content = on ? "#E2C8E8" : "#97EAD2";
@@ -478,6 +494,7 @@
 
   let state = { nodes: [], edges: [], counter: 1, legend: {}, stickers: {} };
   const sel = new Set();
+  let multi = false; // selecting several on a touch screen (see Selecting several)
   let selEdge = null, crossing = new Set();
   let linking = null; // node id while "Connect" waits for a target
 
@@ -651,6 +668,7 @@
     }
   }
   function drawNodes() {
+    if (multi && ![...sel].some(id => nodeById(id))) setMulti(false); // all of them deleted
     for (const n of state.nodes) {
       let el = nodeEls.get(n.id);
       if (!el) { el = document.createElement("div"); el.className = "node"; el.dataset.nid = n.id; world.appendChild(el); nodeEls.set(n.id, el); }
@@ -1024,9 +1042,13 @@
       gesture = { kind: "node", n, start, moved: false, off: { x: toWorld(ev.clientX, ev.clientY).x - n.x, y: toWorld(ev.clientX, ev.clientY).y - n.y }, multi: ev.ctrlKey || ev.metaKey };
     } else if (hit) {
       gesture = { kind: "edge", eid: hit.dataset.eid, start, moved: false };
+    } else if (ev.shiftKey && ev.pointerType === "mouse") {
+      gesture = { kind: "box", start, moved: false, base: ev.ctrlKey || ev.metaKey ? new Set(sel) : new Set() };
     } else {
       gesture = { kind: "pan", start, v0: { x: view.x, y: view.y }, moved: false };
     }
+    // Holding a node on a touch screen starts selecting several.
+    if (gesture.kind === "node" && ev.pointerType !== "mouse") { const g = gesture; g.touch = true; g.lp = setTimeout(() => longPress(g), 480); }
   });
   vp.addEventListener("pointermove", ev => {
     if (!pts.has(ev.pointerId)) return;
@@ -1038,13 +1060,16 @@
       zoomAt(g.mid.x, g.mid.y, (g.s0 * d / g.d0) / view.s); return;
     }
     const dx = ev.clientX - g.start.x, dy = ev.clientY - g.start.y;
-    if (!g.moved && Math.abs(dx) + Math.abs(dy) < 5) return;
+    if (!g.moved && Math.abs(dx) + Math.abs(dy) < (g.touch ? 9 : 5)) return;
+    if (g.lp) { clearTimeout(g.lp); g.lp = null; }
+    if (g.long) return;
+    if (g.kind === "box") { g.moved = true; boxSelect(g, ev); return; }
     if (g.kind === "note" || g.kind === "pin" || g.kind === "sticker") { g.moved = true; return; }
-    if (!g.moved) { g.moved = true; closePop(); if (g.kind === "node") { checkpoint("Moved"); if (!sel.has(g.n.id)) { sel.clear(); sel.add(g.n.id); } } }
+    if (!g.moved) { g.moved = true; closePop(); if (g.kind === "node") { checkpoint("Moved"); if (!sel.has(g.n.id) && !multi) { sel.clear(); sel.add(g.n.id); } } }
     if (g.kind === "pan") { view.x = g.v0.x + dx; view.y = g.v0.y + dy; applyView(); }
     else if (g.kind === "node") {
       const p = toWorld(ev.clientX, ev.clientY), ox = p.x - g.off.x - g.n.x, oy = p.y - g.off.y - g.n.y;
-      for (const id of sel) { const m = nodeById(id); m.x += ox; m.y += oy; const el = nodeEls.get(id); el.style.left = m.x + "px"; el.style.top = m.y + "px"; }
+      for (const id of (sel.has(g.n.id) ? sel : [g.n.id])) { const m = nodeById(id); m.x += ox; m.y += oy; const el = nodeEls.get(id); el.style.left = m.x + "px"; el.style.top = m.y + "px"; }
       drawEdges();
     } else if (g.kind === "link") showTemp(g.from, toWorld(ev.clientX, ev.clientY));
   });
@@ -1055,6 +1080,12 @@
     if (!g || (g.kind === "pinch" && pts.size)) return;
     gesture = null;
     if (g.kind === "pinch") return;
+    if (g.lp) clearTimeout(g.lp);
+    if (g.long) return;
+    if (g.kind === "box") {
+      $("lasso").style.display = "none";
+      if (g.moved) { selEdge = null; closePop(); drawNodes(); drawEdges(); sel.size ? openDetail() : closeDetail(); return; }
+    }
     if (g.kind === "link") {
       hideTemp();
       const t = document.elementFromPoint(ev.clientX, ev.clientY)?.closest(".node");
@@ -1063,6 +1094,7 @@
       return;
     }
     if (g.kind === "note") { if (!g.moved) openNote(g.n); return; }
+    if (g.kind === "sticker" && multi) { if (!g.moved) multiToggle(g.id); return; }
     if (g.kind === "sticker") { if (!g.moved) { sel.clear(); sel.add(g.id); selEdge = null; drawNodes(); drawEdges(); openDetail(); } return; }
     if (g.kind === "pin") { if (!g.moved) { checkpoint(g.n.pinned ? "Released" : "Pinned"); g.n.pinned = !g.n.pinned; save(); drawNodes(); renderDetail(); notice(g.n.pinned ? "Pinned: Untangle leaves it where it is." : "Released: Untangle may move it."); } return; }
     if (g.moved) {
@@ -1073,6 +1105,7 @@
     // A tap.
     if (g.kind === "node") {
       if (linking) { finishLink(g.n); return; }
+      if (multi) { multiToggle(g.n.id); return; }
       if (g.multi) { sel.has(g.n.id) ? sel.delete(g.n.id) : sel.add(g.n.id); selEdge = null; drawNodes(); drawEdges(); openDetail(); return; }
       if (!sel.has(g.n.id) || sel.size > 1) { sel.clear(); sel.add(g.n.id); }
       selEdge = null; drawNodes(); drawEdges();
@@ -1084,6 +1117,8 @@
         const r = nodeEls.get(g.n.id).getBoundingClientRect(), ix = Math.min(14, r.width * 0.2), iy = Math.min(9, r.height * 0.25);
         if (ev.clientX > r.left + ix && ev.clientX < r.right - ix && ev.clientY > r.top + iy && ev.clientY < r.bottom - iy) startEdit(g.n);
       }
+    } else if (multi) {
+      // while selecting several, a tap beside the nodes keeps the selection
     } else if (g.kind === "edge") {
       const ref = sel.size === 1 ? [...sel][0] : null;
       sel.clear(); selEdge = g.eid; drawNodes(); drawEdges(); edgeMenu(state.edges.find(e => e.id === g.eid), ev, ref);
@@ -1102,10 +1137,57 @@
     const p = toWorld(ev.clientX, ev.clientY);
     checkpoint("New node"); startEdit(addNode("New", p.x, p.y));
   });
-  vp.addEventListener("contextmenu", ev => { ev.preventDefault(); const el = ev.target.closest(".node"); if (el) { const n = nodeById(el.dataset.nid); sel.clear(); sel.add(n.id); drawNodes(); openDetail(); } });
+  vp.addEventListener("contextmenu", ev => { ev.preventDefault(); if (gesture && gesture.touch) { longPress(gesture); return; } if (multi) return; const el = ev.target.closest(".node"); if (el) { const n = nodeById(el.dataset.nid); sel.clear(); sel.add(n.id); drawNodes(); openDetail(); } });
   const tempEdge = document.createElementNS(SVGNS, "path"); tempEdge.id = "tempEdge"; tempEdge.style.display = "none"; edgesSvg.appendChild(tempEdge);
   function showTemp(n, p) { tempEdge.setAttribute("d", `M ${n.x} ${n.y} L ${p.x} ${p.y}`); tempEdge.style.display = "block"; }
   function hideTemp() { tempEdge.style.display = "none"; }
+
+  // ---------- Selecting several ----------
+  // Mouse: Ctrl/Cmd+click, or a frame drawn with Shift on the canvas (with Ctrl/Cmd it adds to
+  // the selection). Touch: holding a node starts it; further taps add or remove nodes, the
+  // header shows how many and sets their group. Either way the details column (or the sheet,
+  // from the header) acts on all of them.
+  function setMulti(on) {
+    multi = on;
+    document.querySelector("header").classList.toggle("multi", on);
+    $("hmulti").classList.toggle("hidden", !on);
+    if (on) { closePop(); if (!wide()) closeDetail(); }
+    multiCount();
+  }
+  function multiCount() {
+    if (!multi) return;
+    const k = [...sel].filter(id => nodeById(id)).length;
+    $("multiCount").textContent = k + " selected";
+    $("multiGroup").disabled = $("multiMore").disabled = !k;
+  }
+  function multiToggle(id) {
+    sel.has(id) ? sel.delete(id) : sel.add(id); selEdge = null;
+    drawNodes(); drawEdges();
+    if (!sel.size) { setMulti(false); closeDetail(); return; }
+    multiCount(); if (wide()) openDetail();
+  }
+  function endMulti() { setMulti(false); sel.clear(); drawNodes(); drawEdges(); closeDetail(); }
+  function longPress(g) {
+    if (gesture !== g || g.moved || g.long) return;
+    g.long = true; if (g.lp) { clearTimeout(g.lp); g.lp = null; }
+    if (navigator.vibrate) navigator.vibrate(12);
+    if (!multi) { if (searchOpen()) openSearch(false); sel.clear(); selEdge = null; sel.add(g.n.id); setMulti(true); drawNodes(); drawEdges(); if (wide()) openDetail(); }
+    else multiToggle(g.n.id);
+  }
+  function boxSelect(g, ev) {
+    const x1 = Math.min(g.start.x, ev.clientX), x2 = Math.max(g.start.x, ev.clientX), y1 = Math.min(g.start.y, ev.clientY), y2 = Math.max(g.start.y, ev.clientY);
+    Object.assign($("lasso").style, { display: "block", left: x1 + "px", top: y1 + "px", width: (x2 - x1) + "px", height: (y2 - y1) + "px" });
+    sel.clear(); for (const id of g.base) sel.add(id);
+    for (const n of state.nodes) {
+      const el = nodeEls.get(n.id); if (!el) continue;
+      const r = el.getBoundingClientRect(); if (!r.width) continue; // hidden groups, stickers
+      if (r.left < x2 && r.right > x1 && r.top < y2 && r.bottom > y1) sel.add(n.id);
+    }
+    drawNodes();
+  }
+  $("multiDone").addEventListener("click", endMulti);
+  $("multiGroup").addEventListener("click", ev => groupChooser([...sel].filter(id => nodeById(id)), ev.currentTarget));
+  $("multiMore").addEventListener("click", () => { closePop(); openDetail(); });
 
   // A free place beside a node: tried around it, to the right first, at growing distance,
   // until the new node would overlap none.
@@ -1162,7 +1244,9 @@
     if (wide()) openDetail(); // on a phone the details would cover the map
 
   }
+  const searchOpen = () => !$("hsearch").classList.contains("hidden");
   function openSearch(on) {
+    if (on && multi) setMulti(false);
     document.querySelector("header").classList.toggle("searching", on);
     $("hsearch").classList.toggle("hidden", !on);
     if (on) { closePop(); $("searchQ").focus(); $("searchQ").select(); if ($("searchQ").value) searchRun(); }
@@ -1206,7 +1290,7 @@
       if (sel.size) { ev.preventDefault(); removeNodes([...sel]); }
       else if (selEdge) { ev.preventDefault(); const e = state.edges.find(x => x.id === selEdge); if (e) { checkpoint("Link deleted"); removeEdge(e); notice("Link deleted.", true); } }
     }
-    if (ev.key === "Escape") { closePop(); if (linking) { linking = null; drawNodes(); } }
+    if (ev.key === "Escape") { closePop(); if (linking) { linking = null; drawNodes(); } if (multi) endMulti(); }
     if (ev.key === "0") fitView();
     if (ev.key === "/") { ev.preventDefault(); openSearch(true); }
     // Desktop: \ folds both side columns away (or brings them back), for the whole window.
@@ -2311,8 +2395,14 @@
     ev.stopPropagation();
   });
   $("searchNext").onclick = () => searchGo(1);
+  $("searchAll").onclick = () => {
+    const ids = SEARCH.hits.filter(id => nodeById(id)); if (!ids.length) return;
+    openSearch(false); sel.clear(); for (const id of ids) sel.add(id); selEdge = null;
+    if (!wide()) setMulti(true);
+    drawNodes(); drawEdges(); if (wide()) openDetail();
+  };
   $("searchPrev").onclick = () => searchGo(-1);
-  $("setErgo").onclick = () => { try { localStorage.setItem(BRAND.storageKey + ".theme", ergonoi() ? "" : "ergonoi"); } catch (err) {} applyTheme(); };
+  $("setErgo").onclick = () => { try { localStorage.setItem(BRAND.storageKey + ".theme", ergonoi() ? "outheis" : "ergonoi"); } catch (err) {} applyTheme(); };
   $("setJsonImport").onclick = () => $("jsonInput").click();
   $("setDemo").onclick = () => { checkpoint("Example loaded"); $("dlgSettings").close(); demo(); notice("Example loaded; Undo brings your map back.", true); };
   $("emptyDemo").onclick = () => { checkpoint("Example loaded"); demo(); };
@@ -2669,6 +2759,9 @@
   if (state.nodes.length > 1 && view.s < 0.45) { zoomAt(vp.getBoundingClientRect().left + vp.clientWidth / 2, vp.getBoundingClientRect().top + vp.clientHeight / 2, 0.6 / view.s); notice("The map is wider than the window: Arrange → Compact closes the gaps."); }
   let rt = null;
   window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => { fitHeader(); fitView(); }, 100); });
+  // Installed as an app (the site build only, README: Install as an app): the service worker
+  // keeps the page on the device, so it starts without a network too.
+  if (@@PWA@@ && "serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("sw.js").catch(() => {});
 })();
 </script>
 </body>
