@@ -1,0 +1,18 @@
+import puppeteer from "puppeteer-core";
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const check = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) process.exitCode = 1; };
+const b = await puppeteer.launch({ executablePath: process.env.CHROME || "/usr/bin/google-chrome", args: ["--no-sandbox"] });
+const errs = [];
+const p = await (await b.createBrowserContext()).newPage(); p.on("pageerror", e => errs.push(e.message));
+await p.setViewport({ width: 1280, height: 800, deviceScaleFactor: 2 });
+await p.goto(process.env.MAP_URL); await sleep(800);
+await p.click("#emptyDemo"); await sleep(1200);
+await p.evaluate(() => window.__map.takeVersion()); await sleep(200);
+await p.evaluate(() => { window.__map.state().nodes.pop(); });
+await p.click('#side [data-f="ver"]'); await sleep(400);
+check(await p.evaluate(() => document.querySelectorAll("#versions [data-ver]").length === 1), "a version is listed");
+check(await p.evaluate(() => /Save to a file/.test(document.getElementById("side").textContent)), "the panel offers to save to a file");
+await p.click("#versions [data-ver]"); await sleep(400);
+check(await p.evaluate(() => window.__map.state().nodes.length === 12), "restoring the version brings the node back");
+check(await p.evaluate(() => /not in a file/.test(document.getElementById("stFile").textContent)), "header says the map is not in a file");
+console.log(errs.length ? errs : "no errors"); await b.close();

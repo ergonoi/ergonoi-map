@@ -1,0 +1,24 @@
+import puppeteer from "puppeteer-core";
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const check = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) process.exitCode = 1; };
+const b = await puppeteer.launch({ executablePath: process.env.CHROME || "/usr/bin/google-chrome", args: ["--no-sandbox"] });
+const p = await b.newPage(); const errs = []; p.on("pageerror", e => errs.push(e.message));
+await p.setViewport({ width: 1440, height: 860 });
+await p.goto(process.env.MAP_URL); await sleep(800);
+await p.click("#emptyDemo"); await sleep(2500);
+const visible = id => p.evaluate(i => { const el = document.querySelector(`[data-nid="${i}"]`), r = el.getBoundingClientRect(), v = document.getElementById("viewport").getBoundingClientRect(); return r.left >= v.left && r.right <= v.right && r.top >= v.top && r.bottom <= v.bottom; }, id);
+// pan so that the group's nodes sit at the left edge, behind the column
+await p.evaluate(() => { const r = document.getElementById("viewport"); }); 
+await p.mouse.move(800, 400); await p.mouse.down(); await p.mouse.move(200, 400, { steps: 10 }); await p.mouse.up(); await sleep(200);
+await p.evaluate(() => document.querySelector('#side [data-gadd]').click()); await sleep(400);
+let id = await p.evaluate(() => { const st = window.__map.state(); return st.nodes[st.nodes.length - 1].id; });
+check(await visible(id), "the first node of a new group is in the visible canvas");
+await p.keyboard.press("Enter");
+await p.mouse.move(400, 400); await p.mouse.down(); await p.mouse.move(1300, 400, { steps: 10 }); await p.mouse.up(); await sleep(200);
+const nb = await (await p.$(".node")).boundingBox(); 
+await p.evaluate(() => { const st = window.__map.state(); }); 
+const id2 = await p.evaluate(() => window.__map.state().nodes[0].id);
+const b2 = await (await p.$(`[data-nid="${id2}"]`)).boundingBox(); await p.mouse.click(b2.x + b2.width / 2, b2.y + b2.height / 2, { clickCount: 2 }); await sleep(400);
+id = await p.evaluate(() => { const st = window.__map.state(); return st.nodes[st.nodes.length - 1].id; });
+check(await visible(id), "a node made by double click is in the visible canvas");
+check(!errs.length, "no errors " + errs.join("|")); await b.close();

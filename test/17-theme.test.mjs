@@ -1,0 +1,22 @@
+// ergonoi theme: name, wordmark and colours switch together and stay after a reload.
+import puppeteer from "puppeteer-core";
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const check = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) process.exitCode = 1; };
+const b = await puppeteer.launch({ executablePath: process.env.CHROME || "/usr/bin/google-chrome", args: ["--no-sandbox"] });
+const p = await b.newPage(); const errs = []; p.on("pageerror", e => errs.push(e.message));
+await p.setViewport({ width: 1400, height: 850 });
+await p.goto(process.env.MAP_URL); await sleep(800);
+await p.evaluate(() => localStorage.clear()); await p.reload(); await sleep(800);
+check(await p.evaluate(() => document.title === "οὐθείς Map" && !document.documentElement.classList.contains("ergonoi")), "outheis by default");
+await p.evaluate(() => { document.getElementById("btnSettings").click(); document.getElementById("setErgo").click(); document.getElementById("dlgSettings").close(); }); await sleep(300);
+const st = () => p.evaluate(() => { const b = document.querySelector(".brand"), w = b.querySelector(".bw"); return { title: document.title, text: b.textContent, wfont: w && getComputedStyle(w).fontFamily, header: getComputedStyle(document.querySelector("header")).backgroundColor, on: document.getElementById("setErgo").getAttribute("aria-checked") }; });
+let s = await st();
+check(s.title === "ergonoi Map" && s.text === "ergonoi Map", "name switched: " + s.text);
+check(/Mona Sans Mono/.test(s.wfont || ""), "the word ergonoi in Mona Sans Mono");
+check(s.header === "rgb(226, 200, 232)" && s.on === "true", "light Wisteria header, switch on");
+await p.reload(); await sleep(800); s = await st();
+check(s.title === "ergonoi Map" && s.on === "true", "kept after a reload");
+await p.evaluate(() => { document.getElementById("btnSettings").click(); document.getElementById("setErgo").click(); document.getElementById("dlgSettings").close(); }); await sleep(300);
+check(await p.evaluate(() => document.title === "οὐθείς Map"), "switched back");
+check(!errs.length, "no page errors " + errs.join(" | "));
+await b.close();

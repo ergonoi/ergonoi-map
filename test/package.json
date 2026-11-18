@@ -1,0 +1,8 @@
+{
+  "name": "outheis-map-tests",
+  "private": true,
+  "type": "module",
+  "description": "Browser tests of outheis-map in Chrome",
+  "scripts": { "test": "node run.mjs" },
+  "dependencies": { "puppeteer-core": "^23.11.1" }
+}

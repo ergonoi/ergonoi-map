@@ -1,0 +1,21 @@
+import puppeteer from "puppeteer-core";
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const check = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) process.exitCode = 1; };
+const b = await puppeteer.launch({ executablePath: process.env.CHROME || "/usr/bin/google-chrome", args: ["--no-sandbox"] });
+const p = await b.newPage(); const errs = []; p.on("pageerror", e => errs.push(e.message));
+await p.setViewport({ width: 1440, height: 860 });
+await p.goto(process.env.MAP_URL); await sleep(800);
+await p.click("#emptyDemo"); await sleep(2500);
+const stat = () => p.evaluate(() => { const ns = window.__map.state().nodes; const xs = ns.map(n => n.x), ys = ns.map(n => n.y); const els = [...document.querySelectorAll(".node")].map(e => e.getBoundingClientRect()); let o = 0; for (let i = 0; i < els.length; i++) for (let j = i + 1; j < els.length; j++) { const A = els[i], B = els[j]; if (A.left < B.right && A.right > B.left && A.top < B.bottom && A.bottom > B.top) o++; } return { w: Math.round(Math.max(...xs) - Math.min(...xs)), h: Math.round(Math.max(...ys) - Math.min(...ys)), overlaps: o, order: ns.slice().sort((a, b) => a.x - b.x).map(n => n.id).join() }; });
+const s0 = await stat();
+await p.evaluate(() => document.querySelector('#side [data-ar="loosen"]').click()); await sleep(900);
+const s1 = await stat();
+await p.evaluate(() => document.querySelector('#side [data-ar="loosen"]').click()); await sleep(900);
+const s2 = await stat();
+console.log(s0.w, s1.w, s2.w);
+check(s1.w > s0.w * 1.1 && s2.w > s1.w * 1.1, "+ gives more room each time");
+check(s2.order === s0.order, "+ keeps the layout (same order)");
+for (let i = 0; i < 4; i++) { await p.evaluate(() => document.querySelector('#side [data-ar="compact"]').click()); await sleep(900); }
+const s3 = await stat(); console.log(s3);
+check(s3.w < s2.w && s3.overlaps === 0, "− makes it smaller without overlaps");
+check(!errs.length, "no errors " + errs.join("|")); await b.close();
