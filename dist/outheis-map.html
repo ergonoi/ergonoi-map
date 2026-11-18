@@ -103,9 +103,13 @@
   #side .mrow .r { margin-left:auto; color:var(--muted); font-size:14px; max-width:50%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   #side .sepl { border-top:.5px solid var(--line); margin:10px 0; }
   #side .hint { font-size:13px; color:var(--muted); padding:4px 20px; margin:0; }
-  #side .tog { display:flex; align-items:center; gap:10px; width:calc(100% - 32px); margin:2px 16px; min-height:40px; padding:0 12px; font-size:15px; text-align:left; }
-  #side .tog[aria-pressed="true"] { background:var(--fg); color:var(--page); border-color:var(--fg); }
-  #side .tog .n { margin-left:auto; font-size:12px; opacity:.7; }
+  #side .srow { display:flex; align-items:center; gap:10px; width:100%; min-height:38px; padding:0 16px 0 20px; border:0; border-radius:0; text-align:left; font-size:15px; color:var(--fg); }
+  #side .srow .n { margin-left:auto; color:var(--muted); font-size:12px; }
+  #side .srow .swt { margin-left:auto; flex:none; width:30px; height:18px; border-radius:9px; background:#DAD7D7; position:relative; transition:background .15s; }
+  #side .srow .n + .swt { margin-left:10px; }
+  #side .srow .swt::after { content:""; position:absolute; top:2px; left:2px; width:14px; height:14px; border-radius:50%; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.25); transition:left .15s; }
+  #side .srow .swt.on { background:var(--ok); }
+  #side .srow .swt.on::after { left:14px; }
   #pop .seg { display:flex; gap:6px; padding:6px 16px 10px; flex-wrap:wrap; }
   #pop .seg button { min-height:36px; min-width:44px; padding:0 10px; font-size:15px; }
   #pop .seg button[aria-pressed="true"] { background:var(--fg); color:var(--page); border-color:var(--fg); }
@@ -216,6 +220,10 @@
   .node .stks .st i { width:4px; height:11px; border-radius:1px; display:block; }
   #side .grp .addb { border:0; min-width:28px; min-height:var(--tap); padding:0; display:inline-flex; align-items:center; justify-content:center; color:var(--fg2); }
   #side .grp .addb:hover { color:var(--fg); }
+  @media (hover: hover) and (pointer: fine) {
+    #side .grp .tagb:not([aria-pressed="true"]), #side .grp .delb { visibility:hidden; }
+    #side .grp:hover .tagb, #side .grp:hover .delb, #side .grp:focus-within .tagb, #side .grp:focus-within .delb { visibility:visible; }
+  }
   #side .grp .delb { border:0; min-width:28px; min-height:var(--tap); padding:0; display:inline-flex; align-items:center; justify-content:center; color:var(--line); }
   #side .grp .delb:hover, #side .grp .delb:focus-visible { color:var(--danger); }
   #side .grp .tagb { border:0; min-width:28px; min-height:var(--tap); padding:0; display:inline-flex; align-items:center; justify-content:center; color:var(--line); }
@@ -618,7 +626,7 @@
         const st = stickersOf(n).filter(m => !HIDDEN.has(m.color));
         if (st.length) el.insertAdjacentHTML("beforeend", `<div class="stks">${st.map(m => `<span class="st" data-stk="${esc(m.id)}" title="${esc(groupName(m.color) || "")}"><i style="background:${esc(m.color)}"></i>${esc(m.title)}</span>`).join("")}</div>`);
       }
-      el.classList.toggle("bg", UNCONN && linksShown(n.id).length > 0);
+      el.classList.toggle("bg", UNCONN && edgesOf(n.id).length > 0);
       const pinEl = el.querySelector(".pin"); if (pinEl) { const tt = document.createElementNS(SVGNS, "title"); tt.textContent = pinEl.getAttribute("data-tip"); pinEl.appendChild(tt); }
       el.classList.toggle("target", !!linking && linking !== n.id);
     }
@@ -703,8 +711,11 @@
         + `<span class="n">${n}</span><button type="button" class="addb" data-gnew="${esc(c)}" title="New node in ${esc(name || "this group")}" aria-label="New node in ${esc(name || "this group")}">${PLUS}</button>` + (none ? "" : `<button type="button" class="tagb" data-gtag="${esc(c)}" aria-pressed="${!!(state.stickers || {})[c]}" title="${(state.stickers || {})[c] ? "Shown as stickers on the linked nodes; click to show as nodes" : "Show as stickers on the linked nodes (an attribute rather than a group)"}" aria-label="Stickers">${TAG}</button>`) + (none ? "" : `<button type="button" class="delb" data-gdel="${esc(c)}" title="Delete the group" aria-label="Delete ${esc(name || "the group")}">${TRASH}</button>`) + `<button type="button" class="eye" data-geye="${esc(c)}" aria-pressed="${!off}" title="${off ? "Show" : "Hide"} (press and hold: only this group)" aria-label="${off ? "Show" : "Hide"} ${esc(name || "the group")}">${off ? EYE_OFF : EYE}</button></div>`;
     }).join("");
     h += `<button type="button" class="act" data-gadd="1">+ Add group</button>`;
-    const loose = state.nodes.filter(n => !isSticker(n) && !linksShown(n.id).length).length;
-    h += `<h3>Show</h3><button type="button" class="tog" data-unconn="1" aria-pressed="${UNCONN}" title="Nodes without any link stand out; the others step back">Unconnected nodes<span class="n">${loose}</span></button><button type="button" class="tog" data-regions="1" aria-pressed="${REGIONS}" title="A soft area with its name behind each group">Group areas</button>`;
+    // a link to a sticker is a link: only nodes without any link count as unconnected
+    const loose = state.nodes.filter(n => !isSticker(n) && !edgesOf(n.id).length).length;
+    // Show: two rows with a switch, as settings rows (no large buttons)
+    const SW = on => `<span class="swt${on ? " on" : ""}" aria-hidden="true"></span>`;
+    h += `<h3>Show</h3><button type="button" class="srow" data-unconn="1" role="switch" aria-checked="${UNCONN}" title="Nodes without any link stand out; the others step back">Unconnected nodes<span class="n">${loose}</span>${SW(UNCONN)}</button><button type="button" class="srow" data-regions="1" role="switch" aria-checked="${REGIONS}" title="A soft area with its name behind each group">Group areas${SW(REGIONS)}</button>`;
     h += `<div class="wide"><h3>Arrange</h3><div class="row2"><button type="button" data-ar="untangle">Untangle</button><button type="button" data-ar="groups" title="Groups as areas, ranked by their arrows">By groups</button><button type="button" data-ar="loosen">Loosen</button><button type="button" data-ar="compact">Compact</button><button type="button" data-ar="overlaps">Overlaps</button><button type="button" data-ar="fit">Fit</button>${state.nodes.some(n => n.pinned) ? `<button type="button" data-ar="unpin" title="Release every pinned node">Unpin all (${state.nodes.filter(n => n.pinned).length})</button>` : ""}</div></div>`;
     const fileR = FILE.handle ? esc(FILE.name) : canFile ? "" : "download";
     h += `<h3>File</h3>
@@ -715,7 +726,7 @@
       <button type="button" class="mrow" data-f="ver">${ICO.ver}Versions<span class="r">${versionCount || ""}</span></button>
       <button type="button" class="mrow" data-f="imp">${ICO.imp}Import Markmap …</button>
       <button type="button" class="mrow" data-f="print">${ICO.print}Print or PDF …<span class="r">A4–A0</span></button>
-      <div class="narrow"><div class="sepl"></div><button type="button" class="mrow" data-f="set">${ICO.set}Settings</button><p class="hint">Version 0.6.1</p></div>`;
+      <div class="narrow"><div class="sepl"></div><button type="button" class="mrow" data-f="set">${ICO.set}Settings</button><p class="hint">Version 0.6.2</p></div>`;
     box.innerHTML = h;
   }
   let gPress = null, gPressAt = 0, gPressKey = "";
@@ -1065,7 +1076,10 @@
   }
 
   window.addEventListener("keydown", ev => {
-    if (ev.target.tagName === "INPUT" || document.querySelector("dialog[open]")) return;
+    // keys act on the map only: never while typing, in a dialog, or with the focus on a
+    // control of the columns or a menu (a Backspace there must not delete the selected node)
+    if (/INPUT|TEXTAREA|SELECT/.test(ev.target.tagName) || ev.target.isContentEditable || document.querySelector("dialog[open]")) return;
+    if (ev.target.closest && ev.target.closest("#side, #det, #pop, header")) return;
     if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === "z") { ev.preventDefault(); undo(); return; }
     if (ev.key === "Delete" || ev.key === "Backspace") {
       if (sel.size) { ev.preventDefault(); removeNodes([...sel]); }
