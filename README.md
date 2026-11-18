@@ -148,9 +148,15 @@ the same nodes: whatever is added or changed here is in the map.
   all of them).
 - **Many groups:** the columns scroll sideways; a click on a column head folds it to a
   narrow strip and back (rows can still be dropped on it).
-- **Phones:** one column fills the screen, a swipe goes to the next; the column head lists
-  all groups to jump to. Linking goes through *Link to …* in the details, then a tap on a
+- **Phones:** one column fills the screen, the groups are tabs above it, a swipe goes to
+  the next; a tap on a row edits its name, the arrow opens its details. Linking goes through *Link to …* in the details, then a tap on a
   row; holding a row selects several, as in the map.
+
+## New map
+
+*New map …* in the map menu (a click on the map's name) starts an empty map. The untouched
+example goes without asking; any other map is offered for saving to a file first, stays
+under *Versions*, and a file it was written to is let go.
 
 ## Selecting several
 

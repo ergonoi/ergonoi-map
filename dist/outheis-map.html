@@ -259,7 +259,21 @@
   .lvnewg { width:220px; flex:none; display:flex; gap:6px; align-items:center; border-bottom:1px solid var(--fg); }
   .lvnewg input { flex:1; min-width:0; font:inherit; font-size:14px; border:0; background:transparent; color:var(--fg); outline:none; padding:8px 2px; }
   .lvghost { position:fixed; z-index:40; pointer-events:none; padding:8px 12px; background:var(--page); border:1px solid var(--select); border-radius:6px; font-size:15px; box-shadow:0 6px 18px rgba(0,0,0,.15); }
+  #lvTabs { display:none; }
+  .lvgo { display:none; }
   @media (max-width: 700px) {
+    /* Phones: the groups as a strip of tabs above one column at a time; a tap on a row edits
+       its name, the arrow opens its details. */
+    #lvTabs { display:flex; gap:6px; overflow-x:auto; padding:8px 12px; border-bottom:.5px solid var(--line); background:var(--page); scrollbar-width:none; }
+    #lvTabs::-webkit-scrollbar { display:none; }
+    #lvTabs button { flex:none; display:inline-flex; align-items:center; gap:6px; min-height:36px; padding:0 12px; border-radius:18px; font-size:14px; color:var(--fg2); white-space:nowrap; }
+    #lvTabs button i { width:4px; height:14px; border-radius:1px; }
+    #lvTabs button[aria-current="true"] { color:var(--fg); border-color:var(--fg); font-weight:500; }
+    #lvScroll { top:53px; }
+    .lvh { display:none; } /* the tab above names the column */
+    .lvc { padding-top:4px; }
+    .lvgo { display:inline-flex; align-items:center; justify-content:center; flex:none; min-width:var(--tap); min-height:var(--tap); margin-right:-8px; border:0; color:var(--muted); }
+    #lvArcs { display:none; }
     #lvScroll { scroll-snap-type:x mandatory; }
     #lvCols { gap:16px; padding:10px 16px 96px; }
     .lvc { width:calc(100vw - 32px); scroll-snap-align:center; }
@@ -452,7 +466,7 @@
     </svg>
   </div>
 </div>
-<div id="listView" class="hidden"><div id="lvScroll"><div id="lvCols"></div><svg id="lvArcs" aria-hidden="true"></svg></div></div>
+<div id="listView" class="hidden"><nav id="lvTabs" aria-label="Groups"></nav><div id="lvScroll"><div id="lvCols"></div><svg id="lvArcs" aria-hidden="true"></svg></div></div>
 <div id="textView" class="hidden">
   <div class="tbar"><span class="hint">One line per node: text, {{note}}, #id-…, #group-…, then for each link #id-… #link-plain / -to / -from / -both, optionally #dashed and #label-"…", then #at-x,y, #pinned.</span><button class="sec" id="textCopy">Copy all</button><button class="primary" id="textApply">Apply</button></div>
   <div class="tmsg hidden" id="textMsg"></div>
@@ -497,6 +511,12 @@
   <div class="btnrow" style="margin-top:16px"><button class="primary" id="prGo">Print …</button></div>
   <p class="hint">The browser's print dialog follows. To get a PDF, choose <i>Save as PDF</i> there; the paper size is already set. The map is printed as it is now: hidden groups stay hidden, group areas print if they are shown.</p>
 </dialog>
+<dialog id="dlgNewMap">
+  <div class="dhead"><strong>Start a new map</strong><button class="x" id="nmClose" aria-label="Close">×</button></div>
+  <p id="nmText"></p>
+  <div class="btnrow" style="margin-top:16px"><button class="primary" id="nmGo">Start new</button><button class="sec" id="nmSave">Save to a file, then start new</button><button class="ghost" id="nmCancel">Cancel</button></div>
+  <p class="hint">The current map also stays under Versions in this browser.</p>
+</dialog>
 <dialog id="dlgVersions">
   <div class="dhead"><strong>Earlier versions</strong><button class="x" id="verClose" aria-label="Close">×</button></div>
   <div id="versions"></div>
@@ -520,7 +540,7 @@
   </ul>
   <h3>More</h3>
   <div class="btnrow"><button class="ghost" id="setDemo">Load the example</button><button class="ghost" id="setJsonImport">Restore an old backup (.json)</button></div>
-  <p class="hint">Version 0.9.2 · <a href="https://github.com/outheis-labs/outheis-map" target="_blank" rel="noopener">outheis-map</a></p>
+  <p class="hint">Version 0.9.3 · <a href="https://github.com/outheis-labs/outheis-map" target="_blank" rel="noopener">outheis-map</a></p>
   <input type="file" id="mdInput" accept=".md,.markdown" class="hidden">
   <input type="file" id="txtInput" accept=".txt,text/plain" class="hidden">
   <input type="file" id="jsonInput" accept=".json" class="hidden">
@@ -655,12 +675,42 @@
     $("barText").textContent = text;
     $("barUndo").classList.toggle("hidden", !withUndo);
     $("bar").classList.remove("hidden");
+    // above an open sheet on narrow screens, not over it
+    const det = $("det"), over = !wide() && !det.classList.contains("hidden");
+    $("bar").style.bottom = over ? (innerHeight - det.getBoundingClientRect().top + 12) + "px" : "";
     clearTimeout(barTimer);
     barTimer = setTimeout(() => $("bar").classList.add("hidden"), withUndo ? 6000 : 3000);
   }
   $("barUndo").onclick = () => { $("bar").classList.add("hidden"); undo(); };
 
   // ---------- Example (neutral content) ----------
+  // The example as loaded (its content, not where its nodes stand): a new map replaces it
+  // without asking.
+  let exampleText = null;
+  const contentSig = () => JSON.stringify([state.title || "", state.legend, state.nodes.map(n => [n.title, n.color, n.note || ""]), state.edges.map(e => [e.from, e.to, e.directed, e.label || ""])]);
+  // New map: the current one is offered for saving (unless it is empty or the untouched
+  // example), kept as a version, and a file it was written to is let go.
+  function newMap() {
+    if (!state.nodes.length) { notice("This map is empty already."); return; }
+    if (exampleText !== null && contentSig() === exampleText) { startNewMap(); return; }
+    const n = state.nodes.length, name = state.title ? "“" + state.title + "”" : "The current map";
+    $("nmText").textContent = name + " (" + n + (n === 1 ? " node" : " nodes") + ") is replaced by an empty map." + (FILE.handle ? " It is kept in " + FILE.name + ", which the new map does not write to." : " Save it to a file if you want to keep it outside this browser.");
+    $("nmSave").classList.toggle("hidden", !!FILE.handle);
+    $("dlgNewMap").showModal(); $("nmGo").focus();
+  }
+  async function startNewMap() {
+    if ($("dlgNewMap").open) $("dlgNewMap").close();
+    versionDue = true; try { await takeVersion(); } catch (err) { /* versions are a convenience */ }
+    checkpoint("New map");
+    if (FILE.handle) { FILE.handle = null; FILE.name = ""; try { await idb.del("file"); } catch (err) {} renderFileState(); }
+    state = { nodes: [], edges: [], counter: 1, legend: {}, stickers: {} };
+    exampleText = null; sel.clear(); selEdge = null; HIDDEN.clear(); saveHidden();
+    save(); rebuild(); renderSide(); closeDetail(); showView("map"); showEmpty(); status();
+    notice("New map. The previous one is under Versions.", true);
+  }
+  $("nmGo").onclick = () => startNewMap();
+  $("nmSave").onclick = () => { download((state.title || BRAND.file) + ".txt", "text/plain", toText()); startNewMap(); };
+  $("nmCancel").onclick = $("nmClose").onclick = () => $("dlgNewMap").close();
   function demo() {
     state = { nodes: [], edges: [], counter: 1, legend: {}, stickers: {} };
     const BL = "#D6336C", TE = "#2B8A3E", AB = "#F76707", WI = "#7048E8";
@@ -672,7 +722,7 @@
     for (const t of ["Book the train", "Pack the tent", "Ask about bikes"]) add(t, AB, todo);
     for (const t of ["How many nights?", "Who brings the stove?"]) add(t, WI, open);
     undoStack.length = 0; sel.clear();
-    save(); rebuild();
+    save(); rebuild(); exampleText = contentSig();
     setTimeout(untangle, 60);
   }
 
@@ -890,7 +940,7 @@
       <button type="button" class="mrow" data-f="ver">${ICO.ver}Versions<span class="r">${versionCount || ""}</span></button>
       <button type="button" class="mrow" data-f="imp">${ICO.imp}Markmap …<span class="r">import, export</span></button>
       <button type="button" class="mrow" data-f="print">${ICO.print}Print or PDF …<span class="r">A4–A0</span></button>
-      <div class="narrow"><div class="sepl"></div><button type="button" class="mrow" data-f="set">${ICO.set}Help</button><p class="hint">Version 0.9.2</p></div>`;
+      <div class="narrow"><div class="sepl"></div><button type="button" class="mrow" data-f="set">${ICO.set}Help</button><p class="hint">Version 0.9.3</p></div>`;
     box.innerHTML = h;
   }
   let gPress = null, gPressAt = 0, gPressKey = "";
@@ -997,6 +1047,7 @@
     const cs = groupColors().filter(c => state.nodes.some(n => n.color === c));
     opt("Groups", () => { closePop(); openSide(true); }, "", `<span class="vst">${cs.slice(0, 12).map(c => `<i style="background:${esc(c)}"></i>`).join("")}</span>Groups`);
     sep();
+    opt("New map …", () => { closePop(); newMap(); });
     opt("Open a file …", () => { closePop(); (canFile ? $("fileOpen") : $("fileLoad")).click(); });
     if (!FILE.handle) opt(canFile ? "Save to a file …" : "Download (.txt)", () => { closePop(); (canFile ? $("fileNew") : $("fileDownload")).click(); });
     opt("Earlier versions …", () => { closePop(); renderVersions(); $("dlgVersions").showModal(); });
@@ -1427,7 +1478,7 @@
   // On the right on wide screens, a sheet from below otherwise. Name, group, links with the
   // colour stick of the linked node's group, note, and the actions.
   let detOpened = 0;
-  function openDetail() { if (!sel.size) return closeDetail(); renderDetail(); $("det").classList.remove("hidden"); detOpened = performance.now(); }
+  function openDetail() { if (!sel.size) return closeDetail(); renderDetail(); $("det").classList.remove("hidden"); detOpened = performance.now(); if (!wide()) $("bar").classList.add("hidden"); }
   // A tap that opened the sheet must not also hit a button that appears under the finger.
   $("det").addEventListener("click", ev => { if (lastPointer === "touch" && performance.now() - detOpened < 400) { ev.stopPropagation(); ev.preventDefault(); } }, true);
   function closeDetail() { $("det").classList.add("hidden"); renderDetail(); }
@@ -2710,6 +2761,7 @@
         h += `<div class="lvr${on ? " sel" : ""}${q && !hits.has(n.id) ? " dim" : ""}" data-nid="${esc(n.id)}">`
           + (lvEditing === n.id ? `<input data-lved="${esc(n.id)}" value="${esc(n.title === "New" ? "" : n.title)}" placeholder="Name" maxlength="200" aria-label="Name of the node">` : `<span class="lvn">${esc(n.title)}</span>`)
           + `<span class="lvk" title="${k} link${k === 1 ? "" : "s"}">${k || ""}</span>`
+          + `<button type="button" class="lvgo" data-lvgo="${esc(n.id)}" aria-label="Details of ${esc(n.title)}"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg></button>`
           + (on && sel.size === 1 && lvEditing !== n.id ? `<span class="lvdot" title="Drag onto another row to link" aria-label="Link"></span>` : "")
           + `</div>`;
       }
@@ -2722,7 +2774,29 @@
     const ed = box.querySelector("[data-lved]"); if (ed) { ed.focus(); ed.select(); }
     if (lvNewGroup) $("lvGroupName").focus();
     drawListArcs();
+    renderListTabs();
   }
+  // Phones: which column is in view decides the marked tab.
+  function lvCurrent() {
+    const cols = [...$("lvCols").querySelectorAll(".lvc")], sc = $("lvScroll"), mid = sc.getBoundingClientRect().left + sc.clientWidth / 2;
+    let best = null, d = Infinity;
+    for (const c of cols) { const r = c.getBoundingClientRect(), x = Math.abs(r.left + r.width / 2 - mid); if (x < d) { d = x; best = c.dataset.c; } }
+    return best;
+  }
+  function renderListTabs() {
+    if (!narrowList()) return;
+    const cur = lvCurrent();
+    $("lvTabs").innerHTML = listColumns().map(c => `<button type="button" data-lvtab="${esc(c)}" aria-current="${c === cur}"><i style="background:${esc(c)}"></i>${esc(groupName(c) || "unnamed")}</button>`).join("")
+      + `<button type="button" data-lvtab="+" aria-label="New group">+ Group</button>`;
+    $("lvTabs").querySelector('[aria-current="true"]')?.scrollIntoView({ inline: "nearest", block: "nearest" });
+  }
+  let lvTabT = 0;
+  $("lvScroll").addEventListener("scroll", () => { if (!narrowList()) return; clearTimeout(lvTabT); lvTabT = setTimeout(() => { const cur = lvCurrent(); $("lvTabs").querySelectorAll("button").forEach(b => b.setAttribute("aria-current", String(b.dataset.lvtab === cur))); $("lvTabs").querySelector('[aria-current="true"]')?.scrollIntoView({ inline: "nearest", block: "nearest" }); }, 80); }, { passive: true });
+  $("lvTabs").addEventListener("click", ev => {
+    const b = ev.target.closest("[data-lvtab]"); if (!b) return;
+    if (b.dataset.lvtab === "+") { lvNewGroup = true; renderList(); $("lvCols").querySelector(".lvnewg")?.scrollIntoView({ inline: "center", block: "nearest" }); return; }
+    $("lvCols").querySelector(`.lvc[data-c="${CSS.escape(b.dataset.lvtab)}"]`)?.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+  });
   // The links of the selected node, from its row to the rows (or folded columns) of the others.
   function lvRowPoint(id, toward) {
     const el = $("lvCols").querySelector(`.lvr[data-nid="${CSS.escape(id)}"]`);
@@ -2746,7 +2820,7 @@
     const svg = $("lvArcs"), cols = $("lvCols");
     svg.setAttribute("width", cols.scrollWidth); svg.setAttribute("height", cols.scrollHeight);
     let h = "";
-    if (sel.size === 1) {
+    if (sel.size === 1 && !narrowList()) {
       const id = [...sel][0], a = lvRowPoint(id);
       if (a) for (const e of edgesOf(id)) {
         const o = e.from === id ? e.to : e.from, m = nodeById(o); if (!m || HIDDEN.has(m.color)) continue;
@@ -2773,6 +2847,7 @@
     if (mates.length) p = freeSpotNear(mates.reduce((a, x) => (x.y > a.y ? x : a)));
     else { const r = vp.getBoundingClientRect(), mid = toWorld(r.left + r.width / 2, r.top + r.height / 2); p = state.nodes.length ? freeSpotNear({ x: mid.x, y: mid.y, id: "_" }) : mid; }
     const n = addNode("New", p.x, p.y, c);
+    if (narrowList()) closeDetail();
     sel.clear(); sel.add(n.id); lvEditing = n.id;
     drawNodes(); renderSide(); renderDetail();
     renderList();
@@ -2823,6 +2898,7 @@
       FOLDED.has(c) ? FOLDED.delete(c) : FOLDED.add(c); saveFolded(); renderList(); return;
     }
     if (b && b.dataset.lvadd) { listNewMember(b.dataset.lvadd); return; }
+    if (b && b.dataset.lvgo) { lvEditing = null; sel.clear(); sel.add(b.dataset.lvgo); selEdge = null; drawNodes(); renderList(); openDetail(); return; }
     if (b && b.dataset.lvgroup) { lvNewGroup = true; renderList(); return; }
   });
   $("lvCols").addEventListener("dblclick", ev => {
@@ -2835,7 +2911,7 @@
   $("lvCols").addEventListener("pointerdown", ev => {
     if (ev.target.closest("input")) return;
     const dot = ev.target.closest(".lvdot"), row = ev.target.closest(".lvr");
-    if (!row) return;
+    if (!row || ev.target.closest(".lvgo")) return;
     lvg = { kind: dot ? "link" : "row", id: row.dataset.nid, x: ev.clientX, y: ev.clientY, moved: false, mouse: ev.pointerType === "mouse", multi: ev.ctrlKey || ev.metaKey, wasSel: sel.has(row.dataset.nid) && sel.size === 1 };
     if (dot) { ev.preventDefault(); $("lvCols").setPointerCapture(ev.pointerId); }
   });
@@ -2899,6 +2975,7 @@
     if (linking) { const t = nodeById(g.id); if (t) finishLink(t); redraw(); return; }
     if (multi && !g.mouse) { multiToggle(g.id); renderList(); return; }
     if (g.wasSel && g.mouse && !g.multi) { lvEditing = g.id; renderList(); return; }
+    if (narrowList()) { closeDetail(); sel.clear(); sel.add(g.id); selEdge = null; lvEditing = g.id; drawNodes(); renderList(); return; }
     lvSelect(g.id, g.multi);
   });
   window.addEventListener("pointercancel", () => { if (lvg && lvg.ghost) lvg.ghost.remove(); lvg = null; lvEdgeScroll = 0; });
