@@ -1034,8 +1034,23 @@
     sel.clear(); sel.add(m.id); drawNodes(); drawEdges(); openDetail(); startEdit(m);
     return m;
   }
+  // Brings a node into the visible part of the canvas (not under a column, the sheet or the
+  // tools), moving the view as little as needed.
+  function ensureVisible(n) {
+    const r = vp.getBoundingClientRect(); let bottom = r.bottom, right = r.right, left = r.left;
+    const det = $("det"); if (!wide() && !det.classList.contains("hidden")) bottom = Math.min(bottom, det.getBoundingClientRect().top);
+    const side = $("side"); if (!wide() && side.classList.contains("open")) left = Math.max(left, side.getBoundingClientRect().right);
+    const tools = $("tools"); if (getComputedStyle(tools).display !== "none") right = Math.min(right, tools.getBoundingClientRect().left);
+    const z = sizeOf(n), M = 24;
+    const sx = r.left + view.x + n.x * view.s, sy = r.top + view.y + n.y * view.s, hw = Math.max(180, z.w) * view.s / 2, hh = z.h * view.s / 2;
+    let dx = 0, dy = 0;
+    if (sx - hw < left + M) dx = left + M - (sx - hw); else if (sx + hw > right - M) dx = right - M - (sx + hw);
+    if (sy - hh < r.top + M) dy = r.top + M - (sy - hh); else if (sy + hh > bottom - M) dy = bottom - M - (sy + hh);
+    if (dx || dy) { view.x += dx; view.y += dy; applyView(); }
+  }
   function startEdit(n) {
     const el = nodeEls.get(n.id); if (!el) return;
+    ensureVisible(n);
     el.innerHTML = "";
     const input = document.createElement("input");
     input.value = n.title; el.appendChild(input); input.focus(); input.select();
