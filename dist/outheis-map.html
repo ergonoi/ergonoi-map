@@ -660,7 +660,7 @@
       ${FILE.handle ? `<button type="button" class="mrow" data-f="disc">Disconnect the file</button>` : ""}
       <button type="button" class="mrow" data-f="ver">${ICO.ver}Versions<span class="r">${versionCount || ""}</span></button>
       <button type="button" class="mrow" data-f="imp">${ICO.imp}Import Markmap …</button>
-      <div class="narrow"><div class="sepl"></div><button type="button" class="mrow" data-f="set">${ICO.set}Settings</button><p class="hint">Version 0.4.0</p></div>`;
+      <div class="narrow"><div class="sepl"></div><button type="button" class="mrow" data-f="set">${ICO.set}Settings</button><p class="hint">Version 0.4.1</p></div>`;
     box.innerHTML = h;
   }
   let gPress = null, gPressAt = 0, gPressKey = "";
@@ -1292,24 +1292,32 @@
     });
     return targets;
   }
-  // ---------- Untangle: few crossings, short links ----------
-  // 1. Each connected part is laid out as a radial tree from its best-connected node, with
-  //    sectors in proportion to the size of the subtrees: a tree drawn like this has no
-  //    crossing links at all. 2. Springs and repulsion even it out (links as springs of a
-  //    length fitted to the node sizes). 3. A local search moves single nodes, or swaps two,
-  //    wherever that removes crossings without making links much longer. 4. The parts are
-  //    packed side by side, nodes without links in a row below. Nodes placed by hand stay.
-  function layoutUntangle() {
+  // ---------- Untangle: few crossings, short links, compact ----------
+  // Per connected part, from several roots (the best-connected nodes):
+  //   1. a radial tree, sectors in proportion to the size of the subtrees (a tree drawn so
+  //      has no crossings); the order of the children is then chosen recursively, from the
+  //      root down, so that the links outside the tree cross as little as possible;
+  //   2. springs and repulsion even the distances out;
+  //   3. a local search moves single nodes or swaps two wherever that removes crossings,
+  //      pass after pass until a pass changes nothing, no crossing is left or the time is up;
+  //   4. compaction pulls every node towards its neighbours as far as that adds no crossing
+  //      and no overlap.
+  // The best root wins (fewest crossings, then shortest links). The parts are packed side by
+  // side, nodes without links in rows below. With keepPinned, nodes placed by hand stay and
+  // only the others are improved from where they are.
+  function layoutUntangle(keepPinned) {
     const ns = state.nodes.filter(n => !isSticker(n)), out = new Map();
     if (!ns.length) return out;
+    const T0 = performance.now(), BUDGET = 3500;
+    const timeUp = () => performance.now() - T0 > BUDGET;
     const sz = new Map(ns.map(n => [n.id, sizeOf(n)]));
     const adj = new Map(ns.map(n => [n.id, []]));
-    const es = state.edges.filter(e => adj.has(e.from) && adj.has(e.to));
+    const es = state.edges.filter(e => adj.has(e.from) && adj.has(e.to) && e.from !== e.to);
     for (const e of es) { adj.get(e.from).push(e.to); adj.get(e.to).push(e.from); }
-    const pos = new Map(ns.map(n => [n.id, { x: n.x, y: n.y }]));
-    const fixed = id => nodeById(id).pinned;
-    // ideal link length: as short as the node sizes allow, times the spacing (Loosen raises it)
+    const fixed = id => keepPinned && nodeById(id).pinned;
     const L = (36 + 0.85 * ns.reduce((s, n) => s + sz.get(n.id).w, 0) / ns.length) * spacing();
+    const side = (a, b, c) => (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
+    const cross = (p, q, r, s) => (side(r, s, p) > 0) !== (side(r, s, q) > 0) && (side(p, q, r) > 0) !== (side(p, q, s) > 0);
     // components
     const comp = [], seen = new Set();
     for (const n of ns) {
@@ -1319,52 +1327,11 @@
       comp.push(c);
     }
     const singles = comp.filter(c => c.length === 1).map(c => c[0]), parts = comp.filter(c => c.length > 1).sort((a, b) => b.length - a.length);
-    const cross = (p, q, r, s) => {
-      const d = (a, b, c) => (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
-      return (d(r, s, p) > 0) !== (d(r, s, q) > 0) && (d(p, q, r) > 0) !== (d(p, q, s) > 0);
-    };
     const local = [];
     for (const c of parts) {
-      const inC = new Set(c), ce = es.filter(e => inC.has(e.from));
-      const P = new Map(), ids = c;
-      // 1. radial tree
-      const roots = c.includes(state.radialCenter) ? [state.radialCenter] : c.slice().sort((a, b) => adj.get(b).length - adj.get(a).length).slice(0, 4);
-      let bestP = null, bestScore = Infinity;
-      for (const root of roots) {
-      const parent = new Map([[root, null]]), order = [root], kids = new Map(c.map(v => [v, []]));
-      for (let i = 0; i < order.length; i++) for (const w of adj.get(order[i])) if (!parent.has(w)) { parent.set(w, order[i]); kids.get(order[i]).push(w); order.push(w); }
-      const leaves = new Map();
-      for (const v of order.slice().reverse()) leaves.set(v, kids.get(v).length ? kids.get(v).reduce((s, k) => s + leaves.get(k), 0) : 1);
-      const depth = new Map([[root, 0]]);
-      for (const v of order) for (const k of kids.get(v)) depth.set(k, depth.get(v) + 1);
-      const place = (v, a0, a1) => {
-        const d = depth.get(v), mid = (a0 + a1) / 2, r = d * L * 1.1;
-        P.set(v, { x: Math.cos(mid) * r, y: Math.sin(mid) * r * 0.8 });
-        let at = a0;
-        for (const k of kids.get(v)) { const span = (a1 - a0) * leaves.get(k) / leaves.get(v); place(k, at, at + span); at += span; }
-      };
-      place(root, 0, Math.PI * 2);
-      // 2. springs and repulsion
-      for (let it = 0, T = L; it < 260; it++, T *= 0.985) {
-        const F = new Map(ids.map(v => [v, { x: 0, y: 0 }]));
-        for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) {
-          const a = P.get(ids[i]), b = P.get(ids[j]);
-          let dx = a.x - b.x, dy = a.y - b.y, d = Math.hypot(dx, dy) || 0.1;
-          const room = (sz.get(ids[i]).w + sz.get(ids[j]).w) / 2 + 18 * spacing();
-          const f = (L * L) / d + (d < room ? (room - d) * 4 : 0);
-          dx /= d; dy /= d;
-          F.get(ids[i]).x += dx * f; F.get(ids[i]).y += dy * f; F.get(ids[j]).x -= dx * f; F.get(ids[j]).y -= dy * f;
-        }
-        for (const e of ce) {
-          const a = P.get(e.from), b = P.get(e.to);
-          let dx = b.x - a.x, dy = b.y - a.y; const d = Math.hypot(dx, dy) || 0.1, f = (d * d) / L;
-          dx /= d; dy /= d;
-          F.get(e.from).x += dx * f; F.get(e.from).y += dy * f; F.get(e.to).x -= dx * f; F.get(e.to).y -= dy * f;
-        }
-        for (const v of ids) { const f = F.get(v), m = Math.hypot(f.x, f.y) || 1, s = Math.min(m, T) / m; P.get(v).x += f.x * s; P.get(v).y += f.y * s * 0.85; }
-      }
-      // 3. local search against crossings
-      const crossingsOf = list => {
+      const inC = new Set(c), ce = es.filter(e => inC.has(e.from)), ids = c;
+      const incident = new Map(ids.map(v => [v, ce.filter(e => e.from === v || e.to === v)]));
+      const crossingsIn = (P, list) => {
         let n = 0;
         for (const e of list) for (const f of ce) {
           if (e === f || e.from === f.from || e.from === f.to || e.to === f.from || e.to === f.to) continue;
@@ -1372,66 +1339,157 @@
         }
         return n;
       };
-      const lenOf = list => list.reduce((s, e) => s + Math.hypot(P.get(e.from).x - P.get(e.to).x, P.get(e.from).y - P.get(e.to).y), 0);
-      const incident = v => ce.filter(e => e.from === v || e.to === v);
-      const cost = list => crossingsOf(list) * 1000 + lenOf(list) / L;
-      for (let pass = 0; pass < 6; pass++) {
-        let improved = false;
-        const bad = ids.filter(v => crossingsOf(incident(v)) > 0);
-        for (const v of bad) {
-          const inc = incident(v), here = { ...P.get(v) }, c0 = cost(inc);
-          let best = null, bestC = c0;
-          // a. other places around the centre of its neighbours
-          const nb = adj.get(v), cx = nb.reduce((s, w) => s + P.get(w).x, 0) / nb.length, cy = nb.reduce((s, w) => s + P.get(w).y, 0) / nb.length;
-          for (let k = 0; k < 16; k++) for (const r of [L * 0.8, L * 1.3]) {
-            const cand = { x: cx + Math.cos(k * Math.PI / 8) * r, y: cy + Math.sin(k * Math.PI / 8) * r * 0.8 };
-            if (ids.some(w => w !== v && Math.abs(P.get(w).x - cand.x) < (sz.get(w).w + sz.get(v).w) / 2 + 16 && Math.abs(P.get(w).y - cand.y) < (sz.get(w).h + sz.get(v).h) / 2 + 12)) continue;
-            P.set(v, cand); const cc = cost(inc); if (cc < bestC - 0.01) { bestC = cc; best = { kind: "move", p: cand }; }
+      const allCross = P => { let n = 0; for (let i = 0; i < ce.length; i++) for (let j = i + 1; j < ce.length; j++) { const e = ce[i], f = ce[j]; if (e.from === f.from || e.from === f.to || e.to === f.from || e.to === f.to) continue; if (cross(P.get(e.from), P.get(e.to), P.get(f.from), P.get(f.to))) n++; } return n; };
+      const lenOf = (P, list) => list.reduce((s, e) => s + Math.hypot(P.get(e.from).x - P.get(e.to).x, P.get(e.from).y - P.get(e.to).y), 0);
+      const score = P => allCross(P) * 1000 + lenOf(P, ce) / L;
+      const overlaps = (P, v, p) => ids.some(w => w !== v && Math.abs(P.get(w).x - p.x) < (sz.get(w).w + sz.get(v).w) / 2 + 14 && Math.abs(P.get(w).y - p.y) < (sz.get(w).h + sz.get(v).h) / 2 + 10);
+
+      const runFrom = root => {
+        const P = new Map();
+        // 1. radial tree with the order of the children chosen recursively
+        const parent = new Map([[root, null]]), order = [root], kids = new Map(ids.map(v => [v, []]));
+        for (let i = 0; i < order.length; i++) for (const w of adj.get(order[i])) if (!parent.has(w)) { parent.set(w, order[i]); kids.get(order[i]).push(w); order.push(w); }
+        const leaves = new Map();
+        for (const v of order.slice().reverse()) leaves.set(v, kids.get(v).length ? kids.get(v).reduce((s, k) => s + leaves.get(k), 0) : 1);
+        const depth = new Map([[root, 0]]);
+        for (const v of order) for (const k of kids.get(v)) depth.set(k, depth.get(v) + 1);
+        const place = (v, a0, a1) => {
+          const mid = (a0 + a1) / 2, r = depth.get(v) * L * 1.05;
+          P.set(v, { x: Math.cos(mid) * r, y: Math.sin(mid) * r * 0.8 });
+          let at = a0;
+          for (const k of kids.get(v)) { const span = (a1 - a0) * leaves.get(k) / leaves.get(v); place(k, at, at + span); at += span; }
+        };
+        const layout = () => place(root, 0, Math.PI * 2);
+        layout();
+        // recursive: at every node from the root down, swap children while that lowers the
+        // crossings (abort: no better order, or the time is up)
+        const optimise = v => {
+          const ks = kids.get(v);
+          let improved = ks.length > 1;
+          for (let round = 0; improved && round < 4 && !timeUp(); round++) {
+            improved = false;
+            for (let i = 0; i < ks.length; i++) for (let j = i + 1; j < ks.length; j++) {
+              const before = allCross(P);
+              if (!before) return;
+              [ks[i], ks[j]] = [ks[j], ks[i]]; layout();
+              if (allCross(P) < before) improved = true; else { [ks[i], ks[j]] = [ks[j], ks[i]]; layout(); }
+            }
           }
-          P.set(v, here);
-          // b. swap with another node
-          for (const u of ids) {
-            if (u === v || fixed(u) || fixed(v)) continue;
-            const both = [...new Set([...inc, ...incident(u)])], before = cost(both), pu = P.get(u);
-            P.set(u, here); P.set(v, pu); const after = cost(both); P.set(u, pu); P.set(v, here);
-            if (after - before < bestC - c0 - 0.01) { bestC = c0 + after - before; best = { kind: "swap", u }; }
+          for (const k of ks) if (kids.get(k).length && !timeUp()) optimise(k);
+        };
+        optimise(root);
+        // 2. springs and repulsion
+        for (let it = 0, T = L; it < 220; it++, T *= 0.985) {
+          const F = new Map(ids.map(v => [v, { x: 0, y: 0 }]));
+          for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) {
+            const a = P.get(ids[i]), b = P.get(ids[j]);
+            let dx = a.x - b.x, dy = a.y - b.y; const d = Math.hypot(dx, dy) || 0.1;
+            const room = (sz.get(ids[i]).w + sz.get(ids[j]).w) / 2 + 18 * spacing();
+            const f = (L * L) / d * 0.6 + (d < room ? (room - d) * 4 : 0);
+            dx /= d; dy /= d;
+            F.get(ids[i]).x += dx * f; F.get(ids[i]).y += dy * f; F.get(ids[j]).x -= dx * f; F.get(ids[j]).y -= dy * f;
           }
-          if (best && !fixed(v)) {
-            if (best.kind === "move") P.set(v, best.p);
-            else { const pu = P.get(best.u); P.set(best.u, here); P.set(v, pu); }
-            improved = true;
+          for (const e of ce) {
+            const a = P.get(e.from), b = P.get(e.to);
+            let dx = b.x - a.x, dy = b.y - a.y; const d = Math.hypot(dx, dy) || 0.1, f = (d * d) / L;
+            dx /= d; dy /= d;
+            F.get(e.from).x += dx * f; F.get(e.from).y += dy * f; F.get(e.to).x -= dx * f; F.get(e.to).y -= dy * f;
           }
+          // a link that crosses another pulls its ends together a little more
+          for (const v of ids) { const f = F.get(v), m = Math.hypot(f.x, f.y) || 1, s = Math.min(m, T) / m; P.get(v).x += f.x * s; P.get(v).y += f.y * s * 0.85; }
         }
-        if (!improved) break;
+        return P;
+      };
+      // 3. local search until nothing improves (abort: no change in a pass, no crossings, time)
+      const search = P => {
+        for (let pass = 0; pass < 60 && !timeUp(); pass++) {
+          let improved = false;
+          const bad = ids.filter(v => !fixed(v) && crossingsIn(P, incident.get(v)) > 0);
+          if (!bad.length) break;
+          for (const v of bad) {
+            if (timeUp()) break;
+            const inc = incident.get(v), here = { ...P.get(v) };
+            const cost = list => crossingsIn(P, list) * 1000 + lenOf(P, list) / L;
+            const c0 = cost(inc);
+            let best = null, gain = 0.01;
+            const nb = adj.get(v), cx = nb.reduce((s, w) => s + P.get(w).x, 0) / nb.length, cy = nb.reduce((s, w) => s + P.get(w).y, 0) / nb.length;
+            for (let k = 0; k < 24; k++) for (const r of [L * 0.7, L * 1.1, L * 1.6]) {
+              const cand = { x: cx + Math.cos(k * Math.PI / 12) * r, y: cy + Math.sin(k * Math.PI / 12) * r * 0.8 };
+              if (overlaps(P, v, cand)) continue;
+              P.set(v, cand); const g = c0 - cost(inc); if (g > gain) { gain = g; best = { kind: "move", p: cand }; }
+            }
+            P.set(v, here);
+            for (const u of ids) {
+              if (u === v || fixed(u)) continue;
+              const both = [...new Set([...inc, ...incident.get(u)])], b0 = cost(both), pu = P.get(u);
+              P.set(u, here); P.set(v, pu); const g = b0 - cost(both); P.set(u, pu); P.set(v, here);
+              if (g > gain) { gain = g; best = { kind: "swap", u }; }
+            }
+            if (best) { if (best.kind === "move") P.set(v, best.p); else { const pu = P.get(best.u); P.set(best.u, here); P.set(v, pu); } improved = true; }
+          }
+          if (!improved) break;
+        }
+      };
+      // 4. compaction without new crossings or overlaps
+      const tighten = P => {
+        for (let pass = 0; pass < 12 && !timeUp(); pass++) {
+          let moved = false;
+          for (const v of ids) {
+            if (fixed(v)) continue;
+            const nb = adj.get(v), cx = nb.reduce((s, w) => s + P.get(w).x, 0) / nb.length, cy = nb.reduce((s, w) => s + P.get(w).y, 0) / nb.length;
+            const here = { ...P.get(v) }, c0 = crossingsIn(P, incident.get(v));
+            for (const f of [0.5, 0.25, 0.12]) {
+              const cand = { x: here.x + (cx - here.x) * f, y: here.y + (cy - here.y) * f };
+              if (Math.hypot(cand.x - here.x, cand.y - here.y) < 3 || overlaps(P, v, cand)) continue;
+              P.set(v, cand);
+              if (crossingsIn(P, incident.get(v)) <= c0) { moved = true; break; }
+              P.set(v, here);
+            }
+          }
+          if (!moved) break;
+        }
+      };
+      let P;
+      if (keepPinned) {
+        P = new Map(ids.map(v => [v, { x: nodeById(v).x, y: nodeById(v).y }]));
+        search(P); tighten(P);
+      } else {
+        const roots = c.includes(state.radialCenter) ? [state.radialCenter] : c.slice().sort((a, b) => adj.get(b).length - adj.get(a).length).slice(0, 4);
+        let bestS = Infinity;
+        for (const root of roots) {
+          if (P && timeUp()) break;
+          const Q = runFrom(root); search(Q); tighten(Q);
+          const s = score(Q);
+          if (s < bestS) { bestS = s; P = Q; }
+          if (!allCross(P) && P) { /* a run without crossings: the other roots may still be shorter, if time allows */ }
+        }
       }
-        const score = crossingsOf(ce) * 1000 + lenOf(ce) / L;
-        if (score < bestScore) { bestScore = score; bestP = new Map([...P].map(([k, v]) => [k, { ...v }])); }
-        P.clear();
-      }
-      for (const [k, v] of bestP) P.set(k, v);
       let x1 = 1e9, y1 = 1e9, x2 = -1e9, y2 = -1e9;
       for (const v of ids) { const p = P.get(v), z = sz.get(v); x1 = Math.min(x1, p.x - z.w / 2); x2 = Math.max(x2, p.x + z.w / 2); y1 = Math.min(y1, p.y - z.h / 2); y2 = Math.max(y2, p.y + z.h / 2); }
       local.push({ P, ids, w: x2 - x1, h: y2 - y1, x1, y1 });
     }
-    // 4. packing: parts in rows, then the nodes without links
-    let cx = 0, cy = 0, n0 = 0; for (const n of ns) { cx += n.x; cy += n.y; n0++; } cx /= n0; cy /= n0;
+    if (keepPinned) {
+      for (const l of local) for (const v of l.ids) if (!fixed(v)) out.set(v, l.P.get(v));
+      return out;
+    }
+    // packing: parts in rows, then the nodes without links
+    let cx = 0, cy = 0; for (const n of ns) { cx += n.x; cy += n.y; } cx /= ns.length; cy /= ns.length;
     const GAPP = 50 * spacing();
-    const total = local.reduce((s, l) => s + (l.w + GAPP) * (l.h + GAPP), 0), rowW = Math.max(700, Math.sqrt(total) * 1.4);
+    const total = local.reduce((s, l) => s + (l.w + GAPP) * (l.h + GAPP), 0) + singles.length * 140 * 50, rowW = Math.max(700, Math.sqrt(total) * 1.4);
     let x = 0, y = 0, rowH = 0;
     for (const l of local) {
       if (x > 0 && x + l.w > rowW) { x = 0; y += rowH + GAPP; rowH = 0; }
       for (const v of l.ids) { const p = l.P.get(v); out.set(v, { x: x + p.x - l.x1, y: y + p.y - l.y1 }); }
       x += l.w + GAPP; rowH = Math.max(rowH, l.h);
     }
-    y += rowH + (local.length ? 90 : 0); x = 0; rowH = 0;
+    y += rowH + (local.length ? GAPP : 0); x = 0; rowH = 0;
     for (const v of singles) {
       const z = sz.get(v);
-      if (x > 0 && x + z.w > rowW) { x = 0; y += rowH + 24; rowH = 0; }
-      out.set(v, { x: x + z.w / 2, y: y + z.h / 2 }); x += z.w + 24; rowH = Math.max(rowH, z.h);
+      if (x > 0 && x + z.w > rowW) { x = 0; y += rowH + 20; rowH = 0; }
+      out.set(v, { x: x + z.w / 2, y: y + z.h / 2 }); x += z.w + 20; rowH = Math.max(rowH, z.h);
     }
-    // centre on where the map was; nodes placed by hand stay where they are
     let mx = 0, my = 0; for (const p of out.values()) { mx += p.x; my += p.y; } mx /= out.size; my /= out.size;
-    for (const [v, p] of out) { if (fixed(v)) { out.delete(v); continue; } p.x += cx - mx; p.y += cy - my; }
+    for (const p of out.values()) { p.x += cx - mx; p.y += cy - my; }
     return out;
   }
   // Spacing: 1 is as compact as readable; Loosen raises it in steps, Compact lowers it again.
@@ -1441,16 +1499,18 @@
     state.spacing = Math.min(2.2, Math.round((spacing() + 0.25) * 100) / 100);
     untangle("Loosened (spacing " + Math.round(spacing() * 100) + " %)");
   }
-  function untangle(label) {
+  // Untangle moves every node; "Untangle around placed nodes" leaves those placed by hand.
+  function untangle(label, keepPinned) {
     if (!state.nodes.length) return;
     crossing.clear();
-    const targets = layoutUntangle();
+    const targets = layoutUntangle(!!keepPinned);
     if (!targets.size) { notice("Nothing to move: every node is placed by hand."); return; }
+    if (!keepPinned) for (const n of state.nodes) n.pinned = false;
     checkpoint(typeof label === "string" ? "Loosened" : "Untangled");
     animateTo(targets, () => {
       resolveCollisions(state.nodes, 24); drawNodes(); drawEdges(); save(); fitView();
       const n = countCrossings();
-      notice((typeof label === "string" ? label + ". " : "") + (n ? n + (n === 1 ? " crossing left" : " crossings left") + "; nodes placed by hand stay where they are." : "No crossing links."), true);
+      notice((typeof label === "string" ? label + ". " : "") + (n ? n + (n === 1 ? " crossing left." : " crossings left.") + (keepPinned ? " Nodes placed by hand stayed where they are." : "") : "No crossing links."), true);
     });
   }
   function countCrossings() {
@@ -1498,6 +1558,7 @@
   const arrangeMenu = anchor => openPop("Arrange", () => {
     const pinned = state.nodes.filter(n => n.pinned).length;
     opt("Untangle: few crossings, short links", () => { closePop(); untangle(); });
+    if (pinned) opt("Untangle around the " + pinned + " placed by hand", () => { closePop(); untangle(undefined, true); });
     opt("Loosen: more room between the nodes", () => { closePop(); loosen(); });
     opt("Compact: close the gaps, keep the order", () => { closePop(); compact(); });
     opt("Resolve overlaps, mark crossing links", () => { closePop(); checkReadability(); });

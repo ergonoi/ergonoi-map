@@ -46,10 +46,16 @@ and the details come up as a sheet from below; on phones Map and Text are at the
   node and no other label.
 - The pin on a node means placed by hand: layouts leave it. It appears when a node is
   dragged, and faintly on the selected node; a click on it pins or releases.
-- *Untangle* lays the map out with as few crossing links and as short links as it can:
-  each connected part as a radial tree, evened out by springs, then single nodes moved or
-  swapped wherever that removes a crossing; the parts are packed side by side, nodes
-  without links below. *Loosen* gives more room in steps, *Compact* closes the gaps again.
+- *Untangle* lays the map out with as few crossing links and as short links as it can, as
+  compact as it stays readable. Per connected part and from several roots: a radial tree
+  (which as such has no crossings), the order of the children chosen recursively from the
+  root down against the remaining crossings, springs to even the distances, a local search
+  that moves or swaps nodes pass after pass until a pass changes nothing, no crossing is
+  left or about three seconds are up, and a compaction that pulls nodes together as far as
+  that adds no crossing and no overlap. The parts are packed side by side, nodes without
+  links below. Untangle moves every node and releases the pins; *Arrange → Untangle around
+  the … placed by hand* keeps them and improves only the rest. *Loosen* gives more room in
+  steps, *Compact* closes the gaps again.
 - *Unconnected nodes* (left column) lets the nodes without links stand out and the others
   step back.
 
