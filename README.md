@@ -83,8 +83,9 @@ and the details come up as a sheet from below; on phones Map and Text are at the
 
 ## Groups
 
-A group is a name with a colour. The + in a group's row makes a new node of that group
-beside its other nodes. Tap a group's eye in the left column to hide or show its nodes,
+A group is a name with a colour. *+ Add group* makes a group together with a first node of
+it, in the middle of the view; the name given to the group goes to that node too. Tap a
+group's eye in the left column to hide or show its nodes,
 press and hold to show only this one; which groups are hidden is kept in the browser, not in
 the map. A click on its colour changes the colour, a click on its name renames it. Fourteen strong
 colours are offered, since a node shows its colour only as a frame: the house colours
@@ -94,11 +95,11 @@ other. A group keeps its place. The details of a node list its links with a shor
 colour of the linked node's group. The heading of the details is the node itself: its group
 as a vertical bar (click: another group) and its name (click: edit).
 
-The bin beside a group deletes it: a group without nodes goes at once; with nodes, a menu
+A click on a group's colour opens its menu: another colour, stickers, delete. Deleting a group without nodes goes at once; with nodes, a menu
 asks which group they get instead (or no group), or deletes them as well. Undo takes it
 back.
 
-The tag symbol beside a group shows it as stickers: its nodes leave the canvas and appear
+*Show as stickers* in that menu: its nodes leave the canvas and appear
 as small labels on the nodes linked to them. Some groups are attributes rather than
 things; the map still describes everything with nodes and links.
 

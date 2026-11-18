@@ -700,9 +700,9 @@
     h += cols.map(c => {
       const n = state.nodes.filter(m => m.color === c).length, name = groupName(c), off = HIDDEN.has(c), none = c === BRAND.none;
       return `<div class="grp${off ? " off" : ""}" data-g="${esc(c)}">`
-        + (none ? `<span class="swb"><span class="sw" style="background:${esc(c)}"></span></span>` : `<button type="button" class="swb" data-gc="${esc(c)}" title="Change the colour" aria-label="Colour of ${esc(name || "the group")}"><span class="sw" style="background:${esc(c)}"></span></button>`)
+        + (none ? `<span class="swb"><span class="sw" style="background:${esc(c)}"></span></span>` : `<button type="button" class="swb" data-gc="${esc(c)}" title="Colour, stickers, delete" aria-label="Menu of ${esc(name || "the group")}"><span class="sw" style="background:${esc(c)}"></span></button>`)
         + (none ? `<span class="gn nameless">no group</span>` : `<input class="gn" data-gname="${esc(c)}" value="${esc(state.legend[c] || "")}" placeholder="unnamed" aria-label="Name of the group" title="Rename">`)
-        + `<span class="n">${n}</span><button type="button" class="addb" data-gnew="${esc(c)}" title="New node in ${esc(name || "this group")}" aria-label="New node in ${esc(name || "this group")}">${PLUS}</button>` + (none ? "" : `<button type="button" class="tagb" data-gtag="${esc(c)}" aria-pressed="${!!(state.stickers || {})[c]}" title="${(state.stickers || {})[c] ? "Shown as stickers on the linked nodes; click to show as nodes" : "Show as stickers on the linked nodes (an attribute rather than a group)"}" aria-label="Stickers">${TAG}</button>`) + (none ? "" : `<button type="button" class="delb" data-gdel="${esc(c)}" title="Delete the group" aria-label="Delete ${esc(name || "the group")}">${TRASH}</button>`) + `<button type="button" class="eye" data-geye="${esc(c)}" aria-pressed="${!off}" title="${off ? "Show" : "Hide"} (press and hold: only this group)" aria-label="${off ? "Show" : "Hide"} ${esc(name || "the group")}">${off ? EYE_OFF : EYE}</button></div>`;
+        + `<span class="n">${n}</span>` + (none || !(state.stickers || {})[c] ? "" : `<button type="button" class="tagb" data-gtag="${esc(c)}" aria-pressed="true" title="Shown as stickers on the linked nodes; click to show as nodes" aria-label="Stickers">${TAG}</button>`) + `<button type="button" class="eye" data-geye="${esc(c)}" aria-pressed="${!off}" title="${off ? "Show" : "Hide"} (press and hold: only this group)" aria-label="${off ? "Show" : "Hide"} ${esc(name || "the group")}">${off ? EYE_OFF : EYE}</button></div>`;
     }).join("");
     h += `<button type="button" class="act" data-gadd="1">+ Add group</button>`;
     // a link to a sticker is a link: only nodes without any link count as unconnected
@@ -763,19 +763,17 @@
       sel.clear(); sel.add(m.id); drawNodes(); drawEdges(); openDetail(); renderSide(); openSide(false);
       startEdit(m); return;
     }
-    if (b.dataset.gtag) {
-      state.stickers = state.stickers || {};
-      const c = b.dataset.gtag, on = !state.stickers[c];
-      checkpoint(on ? "Shown as stickers" : "Shown as nodes");
-      if (on) state.stickers[c] = true; else delete state.stickers[c];
-      for (const id of [...sel]) if (isSticker(nodeById(id))) sel.delete(id);
-      save(); drawNodes(); drawEdges(); renderSide(); renderDetail();
-      notice((groupName(c) || "The group") + (on ? " is shown as stickers on the linked nodes." : " is shown as nodes again."), true);
-      return;
-    }
+    if (b.dataset.gtag) { toggleStickers(b.dataset.gtag); return; }
     if (b.dataset.gadd) {
-      const c = freeColors()[0]; if (!c) { notice("All colours are in use; choose another colour in Edit."); return; }
-      checkpoint("New group"); freshColor(c); state.legend[c] = "New group"; save();
+      const c = freeColors()[0]; if (!c) { notice("All colours of the list are in use; a group can take any other colour from its menu."); return; }
+      checkpoint("New group"); freshColor(c); state.legend[c] = "New group";
+      // a first node of the group, named like it (renaming the group renames it while it
+      // still carries the group's name)
+      const r = vp.getBoundingClientRect(), p = toWorld(r.left + r.width / 2, r.top + r.height / 2);
+      const near = state.nodes.length ? freeSpotNear({ x: p.x, y: p.y, id: "_" }) : p;
+      const first = { id: uid(), title: "New group", color: c, x: near.x, y: near.y, pinned: false };
+      state.nodes.push(first); save(); redraw(); ensureVisible(first);
+      sel.clear(); sel.add(first.id); drawNodes(); openDetail();
       renderSide();
       const inp = $("side").querySelector(`[data-gname="${c}"]`); if (inp) { inp.focus(); inp.select(); }
       return;
@@ -804,7 +802,14 @@
     const inp = ev.target; if (inp.dataset.gname === undefined) return;
     sideEditing = false;
     const c = inp.dataset.gname, v = inp.value.trim();
-    if (v !== (state.legend[c] || "")) { checkpoint("Group renamed"); if (v) state.legend[c] = v; else delete state.legend[c]; save(); drawNodes(); renderDetail(); }
+    if (v !== (state.legend[c] || "")) {
+      checkpoint("Group renamed");
+      const old = state.legend[c] || "";
+      if (v) state.legend[c] = v; else delete state.legend[c];
+      // the first node of a new group takes the name the group is given
+      if (v && old === "New group") for (const n of state.nodes) if (n.color === c && n.title === old) n.title = v;
+      save(); drawNodes(); drawEdges(); renderDetail();
+    }
   });
   $("side").addEventListener("keydown", ev => { if (ev.target.dataset.gname !== undefined) { if (ev.key === "Enter") ev.target.blur(); ev.stopPropagation(); } });
 
@@ -874,9 +879,19 @@
       twoTap(del, "Tap again: delete " + ns.length + (ns.length === 1 ? " node" : " nodes"), () => drop(null, true));
     }, anchor);
   }
+  function toggleStickers(c) {
+    state.stickers = state.stickers || {};
+    const on = !state.stickers[c];
+    checkpoint(on ? "Shown as stickers" : "Shown as nodes");
+    if (on) state.stickers[c] = true; else delete state.stickers[c];
+    for (const id of [...sel]) if (isSticker(nodeById(id))) sel.delete(id);
+    save(); drawNodes(); drawEdges(); renderSide(); renderDetail();
+    notice((groupName(c) || "The group") + (on ? " is shown as stickers on the linked nodes." : " is shown as nodes again."), true);
+  }
   function groupColorMenu(c, anchor) {
     const free = freeColors();
-    openPop("Colour of " + (groupName(c) || "the group"), () => {
+    openPop(groupName(c) || "Group", () => {
+      lbl("Colour");
       for (const f of free) opt(f, () => { closePop(); recolorGroup(c, f); }, "", `<span class="ln" style="width:24px;height:3px;background:${esc(f)}"></span>${esc(BRAND.colorNames[f] || f.toUpperCase())}`);
       if (free.length) sep();
       // any other colour, with the browser's colour chooser
@@ -885,6 +900,10 @@
       pick.addEventListener("change", () => { closePop(); recolorGroup(c, pick.value.toUpperCase()); });
       pop.appendChild(pick);
       opt("Other colour …", () => pick.click());
+      sep();
+      const st = !!(state.stickers && state.stickers[c]);
+      opt(st ? "Show as nodes again" : "Show as stickers on the linked nodes", () => { closePop(); toggleStickers(c); });
+      opt("Delete the group …", () => { deleteGroup(c, anchor); }, "danger");
     }, anchor);
   }
   function fitHeader() { document.documentElement.style.setProperty("--hh", document.querySelector("header").offsetHeight + "px"); }
