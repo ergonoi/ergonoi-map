@@ -103,9 +103,13 @@
   #side .mrow .r { margin-left:auto; color:var(--muted); font-size:14px; max-width:50%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   #side .sepl { border-top:.5px solid var(--line); margin:10px 0; }
   #side .hint { font-size:13px; color:var(--muted); padding:4px 20px; margin:0; }
-  #side .row2.help button { border-color:var(--ok); color:var(--ok); }
-  #side .row2.help button[aria-pressed="true"] { background:var(--ok); color:#fff; }
-  #side .row2.help .n { font-size:12px; opacity:.8; margin-left:2px; }
+  #side .mrow .swt { flex:none; width:30px; height:18px; border-radius:9px; background:#DAD7D7; position:relative; margin-left:auto; }
+  #side .mrow .r + .swt { margin-left:10px; }
+  #side .mrow .swt::after { content:""; position:absolute; top:2px; left:2px; width:14px; height:14px; border-radius:50%; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.25); transition:left .15s; }
+  #side .mrow .swt.on { background:var(--ok); }
+  #side .mrow .swt.on::after { left:14px; }
+  #side .mrow.spc .pm { margin-left:auto; display:flex; gap:6px; }
+  #side .mrow.spc .pm button { min-height:30px; min-width:34px; padding:0; display:inline-flex; align-items:center; justify-content:center; color:var(--fg2); }
   #side .srow { display:flex; align-items:center; gap:10px; width:100%; min-height:38px; padding:0 16px 0 20px; border:0; border-radius:0; text-align:left; font-size:15px; color:var(--fg); }
   #side .srow .n { margin-left:auto; color:var(--muted); font-size:12px; }
   #side .srow .swt { margin-left:auto; flex:none; width:30px; height:18px; border-radius:9px; background:#DAD7D7; position:relative; transition:background .15s; }
@@ -226,7 +230,7 @@
   #side .grp .addb { border:0; min-width:28px; min-height:var(--tap); padding:0; display:inline-flex; align-items:center; justify-content:center; color:var(--fg2); }
   #side .grp .addb:hover { color:var(--fg); }
   @media (hover: hover) and (pointer: fine) {
-    #side .grp .tagb:not([aria-pressed="true"]), #side .grp .delb { visibility:hidden; }
+    #side .grp .delb { visibility:hidden; }
     #side .grp:hover .tagb, #side .grp:hover .delb, #side .grp:focus-within .tagb, #side .grp:focus-within .delb { visibility:visible; }
   }
   #side .grp .delb { border:0; min-width:28px; min-height:var(--tap); padding:0; display:inline-flex; align-items:center; justify-content:center; color:var(--line); }
@@ -681,6 +685,15 @@
     open: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3.5 6.5h6l2 2h9v10h-17z"/></svg>',
     save: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 4v11M7 10l5 5 5-5M4 20h16"/></svg>',
     ver: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>',
+    untangle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="6" cy="6" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="12" cy="18" r="2"/><path d="M7.5 7.5l3.4 8.6M16.5 7.5l-3.4 8.6M8 6h8"/></svg>',
+    groups: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3.5" width="18" height="7" rx="2"/><rect x="3" y="13.5" width="8" height="7" rx="2"/><rect x="13" y="13.5" width="8" height="7" rx="2"/></svg>',
+    spacing: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 12h16M7 9l-3 3 3 3M17 9l3 3-3 3"/></svg>',
+    minus: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 12h12"/></svg>',
+    plus: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 6v12M6 12h12"/></svg>',
+    pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 4h6l-1 6 3 3H7l3-3z"/><path d="M12 13v7"/></svg>',
+    overlaps: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3.5" y="5" width="10" height="7" rx="2"/><rect x="10.5" y="12" width="10" height="7" rx="2"/></svg>',
+    unconn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="7" cy="12" r="3"/><circle cx="17" cy="12" r="3"/><path d="M10.5 12h1.5M13.5 12h0"/></svg>',
+    areas: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="14" rx="3" stroke-dasharray="3 2"/><rect x="7" y="10" width="10" height="4" rx="1.5"/></svg>',
     print: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M7 8V3.5h10V8M7 17H4.5V9.5a1.5 1.5 0 0 1 1.5-1.5h12a1.5 1.5 0 0 1 1.5 1.5V17H17M7 13.5h10v7H7z"/></svg>',
     imp: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 20V9M7 14l5-5 5 5M4 4h16"/></svg>',
     set: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg>'
@@ -700,18 +713,26 @@
     h += cols.map(c => {
       const n = state.nodes.filter(m => m.color === c).length, name = groupName(c), off = HIDDEN.has(c), none = c === BRAND.none;
       return `<div class="grp${off ? " off" : ""}" data-g="${esc(c)}">`
-        + (none ? `<span class="swb"><span class="sw" style="background:${esc(c)}"></span></span>` : `<button type="button" class="swb" data-gc="${esc(c)}" title="Colour, stickers, delete" aria-label="Menu of ${esc(name || "the group")}"><span class="sw" style="background:${esc(c)}"></span></button>`)
+        + (none ? `<span class="swb"><span class="sw" style="background:${esc(c)}"></span></span>` : `<button type="button" class="swb" data-gc="${esc(c)}" title="Colour, delete" aria-label="Menu of ${esc(name || "the group")}"><span class="sw" style="background:${esc(c)}"></span></button>`)
         + (none ? `<span class="gn nameless">no group</span>` : `<input class="gn" data-gname="${esc(c)}" value="${esc(state.legend[c] || "")}" placeholder="unnamed" aria-label="Name of the group" title="Rename">`)
-        + `<span class="n">${n}</span>` + (none || !(state.stickers || {})[c] ? "" : `<button type="button" class="tagb" data-gtag="${esc(c)}" aria-pressed="true" title="Shown as stickers on the linked nodes; click to show as nodes" aria-label="Stickers">${TAG}</button>`) + `<button type="button" class="eye" data-geye="${esc(c)}" aria-pressed="${!off}" title="${off ? "Show" : "Hide"} (press and hold: only this group)" aria-label="${off ? "Show" : "Hide"} ${esc(name || "the group")}">${off ? EYE_OFF : EYE}</button></div>`;
+        + `<span class="n">${n}</span>` + (none ? "" : `<button type="button" class="tagb" data-gtag="${esc(c)}" aria-pressed="${!!(state.stickers || {})[c]}" title="${(state.stickers || {})[c] ? "Shown as stickers on the linked nodes; click to show as nodes" : "Show as stickers on the linked nodes"}" aria-label="Stickers">${TAG}</button>`) + `<button type="button" class="eye" data-geye="${esc(c)}" aria-pressed="${!off}" title="${off ? "Show" : "Hide"} (press and hold: only this group)" aria-label="${off ? "Show" : "Hide"} ${esc(name || "the group")}">${off ? EYE_OFF : EYE}</button></div>`;
     }).join("");
     h += `<button type="button" class="act" data-gadd="1">+ Add group</button>`;
     // a link to a sticker is a link: only nodes without any link count as unconnected
     const loose = state.nodes.filter(n => !isSticker(n) && !edgesOf(n.id).length).length;
-    // Arrange: the layouts in one row; below, in another colour, the helpers that only show
-    // something (Overlaps marks, Unconnected and Areas switch on and off, Fit moves the view).
+    // Arrange, as rows like File: the two layouts, spacing with − and +, then the helpers as
+    // switch rows (Unconnected, Areas) and one action row (Overlaps).
     const pinsN = state.nodes.filter(n => n.pinned).length;
-    h += `<h3>Arrange</h3><div class="row2 wide"><button type="button" data-ar="untangle">Untangle</button><button type="button" data-ar="groups" title="Groups as areas, ranked by their arrows">By groups</button><button type="button" data-ar="loosen">Loosen</button><button type="button" data-ar="compact">Compact</button>${pinsN ? `<button type="button" data-ar="unpin" title="Release every pinned node">Unpin all (${pinsN})</button>` : ""}</div>`
-      + `<div class="row2 help"><button type="button" data-ar="overlaps" title="Push overlapping nodes apart and mark crossing links">Overlaps</button><button type="button" data-unconn="1" aria-pressed="${UNCONN}" title="Nodes without any link stand out; the others step back">Unconnected <span class="n">${loose}</span></button><button type="button" data-regions="1" aria-pressed="${REGIONS}" title="A soft area with its name behind each group">Areas</button></div>`;
+    const SW = on => `<span class="swt${on ? " on" : ""}" aria-hidden="true"></span>`;
+    h += `<h3>Arrange</h3><div class="wide">`
+      + `<button type="button" class="mrow" data-ar="untangle" title="Few crossings, short links">${ICO.untangle}Untangle</button>`
+      + `<button type="button" class="mrow" data-ar="groups" title="Groups as areas, ranked by their arrows">${ICO.groups}By groups</button>`
+      + `<div class="mrow spc">${ICO.spacing}Spacing<span class="pm"><button type="button" data-ar="compact" title="Compact: close the gaps" aria-label="Less space">${ICO.minus}</button><button type="button" data-ar="loosen" title="Loosen: more room" aria-label="More space">${ICO.plus}</button></span></div>`
+      + (pinsN ? `<button type="button" class="mrow" data-ar="unpin" title="Release every pinned node">${ICO.pin}Unpin all<span class="r">${pinsN}</span></button>` : "")
+      + `</div>`
+      + `<button type="button" class="mrow" data-ar="overlaps" title="Push overlapping nodes apart and mark crossing links">${ICO.overlaps}Check overlaps</button>`
+      + `<button type="button" class="mrow" data-unconn="1" role="switch" aria-checked="${UNCONN}" title="Nodes without any link stand out; the others step back">${ICO.unconn}Unconnected<span class="r">${loose}</span>${SW(UNCONN)}</button>`
+      + `<button type="button" class="mrow" data-regions="1" role="switch" aria-checked="${REGIONS}" title="A soft area with its name behind each group">${ICO.areas}Group areas${SW(REGIONS)}</button>`;
     const fileR = FILE.handle ? esc(FILE.name) : canFile ? "" : "download";
     h += `<h3>File</h3>
       <button type="button" class="mrow" data-f="open">${ICO.open}Open …</button>
@@ -891,10 +912,6 @@
   function groupColorMenu(c, anchor) {
     const free = freeColors();
     openPop(groupName(c) || "Group", () => {
-      const st = !!(state.stickers && state.stickers[c]);
-      opt(st ? "Show as nodes again" : "Show as stickers on the linked nodes", () => { closePop(); toggleStickers(c); });
-      opt("Delete the group …", () => { deleteGroup(c, anchor); }, "danger");
-      sep();
       lbl("Colour");
       for (const f of free) opt(f, () => { closePop(); recolorGroup(c, f); }, "", `<span class="ln" style="width:24px;height:3px;background:${esc(f)}"></span>${esc(BRAND.colorNames[f] || f.toUpperCase())}`);
       if (free.length) sep();
@@ -904,6 +921,8 @@
       pick.addEventListener("change", () => { closePop(); recolorGroup(c, pick.value.toUpperCase()); });
       pop.appendChild(pick);
       opt("Other colour …", () => pick.click());
+      sep();
+      opt("Delete the group …", () => { deleteGroup(c, anchor); }, "danger");
     }, anchor);
   }
   function fitHeader() { document.documentElement.style.setProperty("--hh", document.querySelector("header").offsetHeight + "px"); }

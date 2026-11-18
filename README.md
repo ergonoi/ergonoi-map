@@ -61,12 +61,12 @@ and the details come up as a sheet from below; on phones Map and Text are at the
   links below. Pinned nodes stay where they are and Untangle improves the rest from
   where it is; *Arrange → Untangle everything, pinned nodes too* lays out all of it. *Loosen* gives more room in
   steps, *Compact* closes the gaps again.
-- Under *Arrange* in the left column, the layouts (Untangle, By groups, Loosen, Compact) form
-  one row; below them, in Teal, the helpers that only show something: *Overlaps* (pushes
-  overlapping nodes apart and marks crossing links), *Unconnected* (nodes without any link
-  stand out, the others step back; a link to a sticker counts) and *Areas* (a soft area
-  behind each group). *Fit* is always on the map, bottom right; *Arrange* appears there too
-  when the left column is folded.
+- *Arrange* in the left column is a list like *File*: *Untangle*, *By groups*, *Spacing*
+  with − (Compact) and + (Loosen), *Check overlaps* (pushes overlapping nodes apart and marks
+  crossing links), and two switches: *Unconnected* (nodes without any link stand out, the
+  others step back; a link to a sticker counts) and *Group areas* (a soft area behind each
+  group). *Fit* is always on the map, bottom right; *Arrange* appears there too when the
+  left column is folded.
 - The gear opens a short help, the example and the restore of an old backup. Markmap import
   and export are under *File*.
 
@@ -95,11 +95,11 @@ other. A group keeps its place. The details of a node list its links with a shor
 colour of the linked node's group. The heading of the details is the node itself: its group
 as a vertical bar (click: another group) and its name (click: edit).
 
-A click on a group's colour opens its menu: another colour, stickers, delete. Deleting a group without nodes goes at once; with nodes, a menu
+A click on a group's colour opens its menu: another colour, or delete at the bottom. Deleting a group without nodes goes at once; with nodes, a menu
 asks which group they get instead (or no group), or deletes them as well. Undo takes it
 back.
 
-*Show as stickers* in that menu: its nodes leave the canvas and appear
+The tag symbol in a group's row shows it as stickers: its nodes leave the canvas and appear
 as small labels on the nodes linked to them. Some groups are attributes rather than
 things; the map still describes everything with nodes and links.
 
