@@ -584,6 +584,8 @@
   // The default theme is set at build time (brand.json); a choice made in Settings is kept
   // per browser and wins over it.
   const DEFAULT_THEME = "@@DEFAULT_THEME@@";
+  // The name of a saved map follows the look: ergonoi-map.txt or outheis-map.txt.
+  const fileBase = () => ergonoi() ? "ergonoi-map" : BRAND.file;
   const ergonoi = () => { let t = ""; try { t = localStorage.getItem(BRAND.storageKey + ".theme") || ""; } catch (err) { /* no storage */ } return (t || DEFAULT_THEME) === "ergonoi"; };
   function applyTheme() {
     const on = ergonoi(), name = on ? "ergonoi Map" : "οὐθείς Map";
@@ -723,7 +725,7 @@
     notice("New map. The previous one is under Versions.", true);
   }
   $("nmGo").onclick = () => startNewMap();
-  $("nmSave").onclick = () => { download((state.title || BRAND.file) + ".txt", "text/plain", toText()); startNewMap(); };
+  $("nmSave").onclick = () => { download((state.title || fileBase()) + ".txt", "text/plain", toText()); startNewMap(); };
   $("nmCancel").onclick = $("nmClose").onclick = () => $("dlgNewMap").close();
   function demo() {
     state = { nodes: [], edges: [], counter: 1, legend: {}, stickers: {} };
@@ -1023,7 +1025,7 @@
     else if (f === "ver") { renderVersions(); $("dlgVersions").showModal(); }
     else if (f === "imp") openPop("Markmap", () => {
       opt("Import a Markmap file (.md) …", () => { closePop(); $("mdInput").click(); });
-      opt("Export as Markmap (.md)", () => { closePop(); download(BRAND.file + ".md", "text/markdown", markmapExportText()); });
+      opt("Export as Markmap (.md)", () => { closePop(); download(fileBase() + ".md", "text/markdown", markmapExportText()); });
       lbl("For markmap.js.org and other programs");
     }, b);
     else if (f === "print") { openSide(false); openPrint(); }
@@ -1549,6 +1551,25 @@
       <h4>Note</h4><span class="fwrap note"><textarea id="detNote" maxlength="5000" placeholder="More about this node: text, a link, an address …">${esc(n.note || "")}</textarea><button type="button" class="fclear" data-fclear="detNote" aria-label="Clear the note" title="Clear">${CLEAR}</button></span>
       <div class="acts"><button class="primary" data-dnew="1">+ Linked node</button><button data-dlink="1">Link to …</button><button class="danger" data-ddel="1">Delete</button></div>
       <div class="more"><button data-dpin="1">${n.pinned ? "Release the pin" : "Keep in place (pin)"}</button><button data-dcenter="1" title="Untangle with this node in the middle">Untangle around it</button></div>`;
+    keepNoteHeight();
+  }
+  // The note field keeps the height it was drawn to, from node to node and after reloading:
+  // the detail is drawn anew for every node, so the height is remembered.
+  const NOTE_H = () => BRAND.storageKey + ".noteH";
+  let noteObs = null;
+  function keepNoteHeight() {
+    const ta = $("detNote"); if (!ta) return;
+    let h = 0; try { h = +localStorage.getItem(NOTE_H()) || 0; } catch (err) { /* no storage */ }
+    if (h) ta.style.height = h + "px";
+    if (noteObs) noteObs.disconnect();
+    if (typeof ResizeObserver !== "function") return;
+    let first = true;
+    noteObs = new ResizeObserver(() => {
+      if (first) { first = false; return; } // the height just set
+      if (!ta.isConnected || !ta.offsetHeight) return;
+      try { localStorage.setItem(NOTE_H(), String(ta.offsetHeight)); } catch (err) { /* no storage */ }
+    });
+    noteObs.observe(ta);
   }
   $("det").addEventListener("click", ev => {
     const b = ev.target.closest("button"); if (!b) return;
@@ -2480,7 +2501,7 @@
     };
     roots.forEach((r, i) => { if (roots.length !== 1) { lines.push("- " + mdEscape(nodeById(r).title)); emit(r, 1, String(i)); } else emit(r, 1, "0"); });
     for (const e of extra) { const f = pathOf.get(e.from), t = pathOf.get(e.to); if (f && t) meta.extraEdges.push({ f, t, d: !!e.directed }); }
-    return ["---", "title: " + BRAND.file, "markmap:", "  colorFreezeLevel: 2", "mindmapMeta: " + JSON.stringify(meta), "---", ""].join("\n") + lines.join("\n") + "\n";
+    return ["---", "title: " + fileBase(), "markmap:", "  colorFreezeLevel: 2", "mindmapMeta: " + JSON.stringify(meta), "---", ""].join("\n") + lines.join("\n") + "\n";
   }
   function markmapImportText(text) {
     let body = String(text || ""), meta = null;
@@ -3122,11 +3143,11 @@
     } catch (err) { if (err.name !== "AbortError") notice(err.message); }
   };
   $("fileNew").onclick = async () => {
-    try { const h = await showSaveFilePicker({ ...pickerOpts, suggestedName: BRAND.file + ".txt" }); await connect(h, true); openSide(false); notice("Connected to " + h.name + "."); }
+    try { const h = await showSaveFilePicker({ ...pickerOpts, suggestedName: fileBase() + ".txt" }); await connect(h, true); openSide(false); notice("Connected to " + h.name + "."); }
     catch (err) { if (err.name !== "AbortError") notice(err.message); }
   };
   $("fileDisconnect").onclick = async () => { FILE.handle = null; FILE.name = ""; try { await idb.del("file"); } catch (err) {} renderFileState(); status(); renderSide(); };
-  $("fileDownload").onclick = () => { download(BRAND.file + ".txt", "text/plain", toText()); FILE.exported = Date.now(); dirtyFile = false; try { localStorage.setItem(BRAND.storageKey + ".exported", String(FILE.exported)); } catch (err) {} status(); };
+  $("fileDownload").onclick = () => { download(fileBase() + ".txt", "text/plain", toText()); FILE.exported = Date.now(); dirtyFile = false; try { localStorage.setItem(BRAND.storageKey + ".exported", String(FILE.exported)); } catch (err) {} status(); };
   $("fileLoad").onclick = () => $("txtInput").click();
   $("txtInput").onchange = () => { const f = $("txtInput").files[0]; if (!f) return; f.text().then(t => readInto(t, "File loaded").then(ok => { if (ok) { openSide(false); notice("Loaded " + f.name + ".", true); } })); $("txtInput").value = ""; };
   // Leaving with changes that are in no file: the browser asks first.
