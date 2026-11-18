@@ -124,6 +124,28 @@ more lie in hidden groups. Enter or ↓ goes to the next match, Shift+Enter or �
 previous one: it is selected and moved into view, on computers with its details on the
 right. Escape or the arrow on the left closes the search.
 
+## List
+
+*List* (between *Map* and *Text*) shows every group as a column of its nodes, in the order
+they were made; groups hidden with the eye are left out here too. It is a second view of
+the same nodes: whatever is added or changed here is in the map.
+
+- **Building:** *+ Group* asks for a name and starts the first member; *+ Member* at the
+  end of a column adds a node to that group, Enter after a name the next one, Escape (or
+  Enter on an empty row) ends. New nodes are placed in the map beside the others of their
+  group.
+- **A row** is a node: a click selects it, its details are on the right as in the map; a
+  click on the selected row or a double click renames it. Ctrl/Cmd+click selects several.
+- **Linking:** the selected row shows its links as arcs and a blue point; dragged onto
+  another row, it links the two. At the edge of the window the columns scroll along.
+- **Group:** a row dragged into another column takes that group (with several selected,
+  all of them).
+- **Many groups:** the columns scroll sideways; a click on a column head folds it to a
+  narrow strip and back (rows can still be dropped on it).
+- **Phones:** one column fills the screen, a swipe goes to the next; the column head lists
+  all groups to jump to. Linking goes through *Link to …* in the details, then a tap on a
+  row; holding a row selects several, as in the map.
+
 ## Selecting several
 
 - **Mouse:** Ctrl+click (Cmd+click on a Mac) adds a node to the selection or takes it out.
