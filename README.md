@@ -1,4 +1,8 @@
-# οὐθείς Map
+# ergonoi Map
+
+![](docs/key-visual.png)
+
+*An open mind map: https://ergonoi.github.io/ergonoi-map/*
 
 A mind map in a single HTML file: nodes in groups, links with or without direction, a note
 for every node. It runs in the browser without a server and without loading anything from
