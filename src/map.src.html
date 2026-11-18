@@ -208,6 +208,8 @@
   #edges text.elabel.gone { display:none; }
   /* Unconnected: the nodes without links stand out, the rest steps back. */
   .node.bg, #edges .bg { opacity:.2; }
+  #edges .regions { pointer-events:none; }
+  #edges text.rlabel { font:600 13px var(--font-head); letter-spacing:.02em; }
   .node.stk { display:none; }
   .node .stks { display:flex; flex-wrap:wrap; gap:4px; margin-top:6px; }
   .node .stks .st { display:inline-flex; align-items:center; gap:4px; font-size:12px; line-height:1; padding:3px 6px 3px 4px; border:.5px solid var(--line); border-radius:4px; background:var(--page); cursor:pointer; }
@@ -459,7 +461,8 @@
     }
   }
   function status() {
-    $("mapName").textContent = FILE.name ? FILE.name.replace(/\.[^.]+$/, "") : "Unsaved map";
+    // the map's own name; without one, the name of its file; else "Untitled map"
+    $("mapName").textContent = state.title || (FILE.name ? FILE.name.replace(/\.[^.]+$/, "") : "Untitled map");
     $("stDot").classList.toggle("dirty", !!(dirtyFile && state.nodes.length && !(FILE.handle && !FILE.needsPermission)));
     $("stDot").title = FILE.handle ? (FILE.needsPermission ? "Not writing to " + FILE.name + " until resumed" : "Written to " + FILE.name) : dirtyFile && state.nodes.length ? "Changes not in a file" : "Saved in this browser";
     $("stSaved").textContent = lastChange ? "saved " + hhmm(lastChange) : "";
@@ -535,6 +538,7 @@
       g.line.classList.toggle("bg", !!bg);
     }
     placeLabels();
+    if (typeof drawRegions === "function") drawRegions();
   }
   // Edge labels: tried at the middle of the link, then a little to either side of it and
   // further along, until the label overlaps no node and no label placed before it.
@@ -667,8 +671,8 @@
     }).join("");
     h += `<button type="button" class="act" data-gadd="1">+ Add group</button>`;
     const loose = state.nodes.filter(n => !isSticker(n) && !linksShown(n.id).length).length;
-    h += `<h3>Show</h3><button type="button" class="tog" data-unconn="1" aria-pressed="${UNCONN}" title="Nodes without any link stand out; the others step back">Unconnected nodes<span class="n">${loose}</span></button>`;
-    h += `<div class="wide"><h3>Arrange</h3><div class="row2"><button type="button" data-ar="untangle">Untangle</button><button type="button" data-ar="loosen">Loosen</button><button type="button" data-ar="compact">Compact</button><button type="button" data-ar="overlaps">Overlaps</button><button type="button" data-ar="fit">Fit</button>${state.nodes.some(n => n.pinned) ? `<button type="button" data-ar="unpin" title="Release every pinned node">Unpin all (${state.nodes.filter(n => n.pinned).length})</button>` : ""}</div></div>`;
+    h += `<h3>Show</h3><button type="button" class="tog" data-unconn="1" aria-pressed="${UNCONN}" title="Nodes without any link stand out; the others step back">Unconnected nodes<span class="n">${loose}</span></button><button type="button" class="tog" data-regions="1" aria-pressed="${REGIONS}" title="A soft area with its name behind each group">Group areas</button>`;
+    h += `<div class="wide"><h3>Arrange</h3><div class="row2"><button type="button" data-ar="untangle">Untangle</button><button type="button" data-ar="groups" title="Groups as areas, ranked by their arrows">By groups</button><button type="button" data-ar="loosen">Loosen</button><button type="button" data-ar="compact">Compact</button><button type="button" data-ar="overlaps">Overlaps</button><button type="button" data-ar="fit">Fit</button>${state.nodes.some(n => n.pinned) ? `<button type="button" data-ar="unpin" title="Release every pinned node">Unpin all (${state.nodes.filter(n => n.pinned).length})</button>` : ""}</div></div>`;
     const fileR = FILE.handle ? esc(FILE.name) : canFile ? "" : "download";
     h += `<h3>File</h3>
       <button type="button" class="mrow" data-f="open">${ICO.open}Open …</button>
@@ -706,6 +710,7 @@
     }
     if (b.dataset.gc) { groupColorMenu(b.dataset.gc, b); return; }
     if (b.dataset.unconn) { setUnconn(!UNCONN); return; }
+    if (b.dataset.regions) { REGIONS = !REGIONS; saveRegions(); drawRegions(); renderSide(); return; }
     if (b.dataset.gdel) { deleteGroup(b.dataset.gdel, b); return; }
     if (b.dataset.gtag) {
       state.stickers = state.stickers || {};
@@ -726,6 +731,7 @@
     }
     const ar = b.dataset.ar;
     if (ar === "unpin") { checkpoint("Unpinned all"); state.nodes.forEach(n => n.pinned = false); save(); drawNodes(); renderSide(); renderDetail(); notice("All pins released.", true); return; }
+    if (ar === "groups") { byGroups(); return; }
     if (ar === "untangle") untangle(); else if (ar === "loosen") loosen(); else if (ar === "compact") compact(); else if (ar === "overlaps") checkReadability(); else if (ar === "fit") fitView(); else if (ar === "more") arrangeMenu(b);
     const f = b.dataset.f;
     if (f === "open") (canFile ? $("fileOpen") : $("fileLoad")).click();
@@ -748,6 +754,14 @@
 
   // ---------- Title: the map ----------
   $("titleBtn").onclick = () => openPop("Map", () => {
+    const row = document.createElement("div"); row.className = "row";
+    row.innerHTML = `<input aria-label="Name of the map" placeholder="Name of the map" value="${esc(state.title || "")}"><button class="ok" aria-label="Apply">✓</button>`;
+    pop.appendChild(row);
+    const inp = row.querySelector("input");
+    const apply = () => { const v = inp.value.trim(); if (v !== (state.title || "")) { checkpoint("Map renamed"); if (v) state.title = v; else delete state.title; save(); } closePop(); };
+    row.querySelector(".ok").onclick = apply;
+    inp.onkeydown = k => { if (k.key === "Enter") apply(); if (k.key === "Escape") closePop(); k.stopPropagation(); };
+    if (!matchMedia("(pointer: coarse)").matches) setTimeout(() => { inp.focus(); inp.select(); }, 0);
     const counts = state.nodes.length + (state.nodes.length === 1 ? " node" : " nodes") + " · " + state.edges.length + (state.edges.length === 1 ? " link" : " links");
     lbl(counts);
     const cs = groupColors().filter(c => state.nodes.some(n => n.color === c));
@@ -1606,6 +1620,176 @@
     for (const p of out.values()) { p.x += cx - mx; p.y += cy - my; }
     return out;
   }
+  // ---------- By groups: groups as areas, ranked by their arrows ----------
+  // Two levels. Inside a group the nodes are laid out in rows: a node with arrows that only
+  // go out stands at the top, every arrow leads one row down (longest chain; a cycle is
+  // broken where the depth-first search meets it again); nodes joined by plain links only
+  // follow their neighbours one row below; a group without arrows starts from its best-
+  // connected node. The order within a row comes from repeated sweeps by the mean position
+  // of the neighbours (fewer crossings). The groups are ranked the same way by the arrows
+  // between them and set in rows; a row that grows too wide wraps. Finally the rows of all
+  // groups are swept once more by the positions of all neighbours, also across groups.
+  function layoutByGroups() {
+    const ns = state.nodes.filter(n => !isSticker(n) && !HIDDEN.has(n.color)), out = new Map();
+    if (!ns.length) return out;
+    const sz = new Map(ns.map(n => [n.id, sizeOf(n)])), inNs = new Set(ns.map(n => n.id));
+    const es = state.edges.filter(e => inNs.has(e.from) && inNs.has(e.to) && e.from !== e.to);
+    const colorOf = id => nodeById(id).color;
+    const GAPX = 26 * spacing(), GAPY = 70 * spacing(), PADG = 34 * spacing();
+    // ranks from arrows: longest path from the sources; a cycle is broken where it is met
+    const rankBy = (ids, arcs, plain) => {
+      const outA = new Map(ids.map(v => [v, []])), inDeg = new Map(ids.map(v => [v, 0]));
+      const state_ = new Map(), keep = [];
+      const visit = v => { state_.set(v, 1); for (const w of arcs.filter(a => a[0] === v).map(a => a[1])) { if (state_.get(w) === 1) continue; keep.push([v, w]); if (!state_.get(w)) visit(w); } state_.set(v, 2); };
+      for (const v of ids.slice().sort((a, b) => arcs.filter(x => x[1] === a).length - arcs.filter(x => x[1] === b).length)) if (!state_.get(v)) visit(v);
+      for (const [a, b] of keep) { outA.get(a).push(b); inDeg.set(b, inDeg.get(b) + 1); }
+      const rank = new Map(), q = ids.filter(v => !inDeg.get(v) && (outA.get(v).length));
+      for (const v of q) rank.set(v, 0);
+      const order = [];
+      const deg = new Map(inDeg); const qq = ids.filter(v => !deg.get(v));
+      while (qq.length) { const v = qq.shift(); order.push(v); for (const w of outA.get(v)) { deg.set(w, deg.get(w) - 1); if (!deg.get(w)) qq.push(w); } }
+      for (const v of order) if (rank.has(v)) for (const w of outA.get(v)) rank.set(w, Math.max(rank.get(w) ?? 0, rank.get(v) + 1));
+      // the rest follows plain links one row below a placed neighbour, else from the best-connected
+      let changed = true;
+      while (changed) {
+        changed = false;
+        for (const v of ids) if (!rank.has(v)) { const nb = plain(v).filter(w => rank.has(w)); if (nb.length) { rank.set(v, Math.min(...nb.map(w => rank.get(w))) + 1); changed = true; } }
+        if (!changed) { const rest = ids.filter(v => !rank.has(v)); if (rest.length) { rest.sort((a, b) => plain(b).length - plain(a).length); rank.set(rest[0], 0); changed = true; } }
+      }
+      return rank;
+    };
+    // order within rows by barycentres, sweeping down and up
+    const sweep = (rows, nbOf, posOf, times) => {
+      for (let t = 0; t < times; t++) for (const r of (t % 2 ? rows.slice().reverse() : rows)) {
+        const bc = new Map(r.map((v, i) => { const xs = nbOf(v).map(posOf).filter(x => x !== null); return [v, xs.length ? xs.reduce((s, x) => s + x, 0) / xs.length : i * 1000 / (r.length || 1)]; }));
+        r.sort((a, b) => bc.get(a) - bc.get(b));
+      }
+    };
+    // 1. inside each group
+    const groupsOf = new Map();
+    for (const n of ns) { if (!groupsOf.has(n.color)) groupsOf.set(n.color, []); groupsOf.get(n.color).push(n.id); }
+    const boxes = new Map();
+    for (const [c, ids] of groupsOf) {
+      const set = new Set(ids), inner = es.filter(e => set.has(e.from) && set.has(e.to));
+      const arcs = []; for (const e of inner) if (e.directed && !e.both) arcs.push([e.from, e.to]);
+      const plain = v => inner.filter(e => e.from === v || e.to === v).map(e => e.from === v ? e.to : e.from);
+      const rank = rankBy(ids, arcs, plain);
+      const nRows = Math.max(...ids.map(v => rank.get(v))) + 1, rows = Array.from({ length: nRows }, () => []);
+      for (const v of ids) rows[rank.get(v)].push(v);
+      const local = new Map(); // v -> index position, refined below
+      const place = () => {
+        let w = 0; const rowW = rows.map(r => r.reduce((s, v) => s + sz.get(v).w, 0) + GAPX * Math.max(0, r.length - 1));
+        w = Math.max(...rowW);
+        let y = 0;
+        rows.forEach((r, i) => {
+          let x = (w - rowW[i]) / 2; const rh = Math.max(0, ...r.map(v => sz.get(v).h));
+          for (const v of r) { local.set(v, { x: x + sz.get(v).w / 2, y: y + rh / 2 }); x += sz.get(v).w + GAPX; }
+          y += rh + GAPY;
+        });
+        return { w, h: Math.max(0, y - GAPY) };
+      };
+      place();
+      sweep(rows, plain, v => local.has(v) ? local.get(v).x : null, 6);
+      const dim = place();
+      boxes.set(c, { ids, rows, local: new Map(local), w: dim.w, h: dim.h, place });
+    }
+    // 2. groups ranked by the arrows between them
+    const cols = [...groupsOf.keys()];
+    const garcs = [], gw = new Map();
+    for (const e of es) {
+      const a = colorOf(e.from), b = colorOf(e.to); if (a === b) continue;
+      const k = a < b ? a + "|" + b : b + "|" + a; gw.set(k, (gw.get(k) || 0) + 1);
+      if (e.directed && !e.both) garcs.push([a, b]);
+    }
+    // a group pair counts as an arrow in the direction most of its arrows take
+    const net = new Map(); for (const [a, b] of garcs) { const k = a + ">" + b; net.set(k, (net.get(k) || 0) + 1); }
+    const gArcs = []; for (const [k, n] of net) { const [a, b] = k.split(">"); if (n > (net.get(b + ">" + a) || 0)) gArcs.push([a, b]); }
+    const gPlain = c => cols.filter(d => d !== c && gw.get(c < d ? c + "|" + d : d + "|" + c));
+    const grank = rankBy(cols, gArcs, gPlain);
+    const totalArea = cols.reduce((s, c) => s + (boxes.get(c).w + 2 * PADG) * (boxes.get(c).h + 2 * PADG), 0);
+    // a row takes at least the two widest groups side by side, so that groups of the same rank
+    // do not end up above each other (where the links of one would cross the other)
+    const widths = cols.map(c => boxes.get(c).w + 3 * PADG).sort((a, b) => b - a);
+    const maxRow = Math.max(900, Math.sqrt(totalArea) * 1.8, (widths[0] || 0) + (widths[1] || 0));
+    const gRows = [];
+    for (const c of cols.slice().sort((a, b) => grank.get(a) - grank.get(b))) {
+      const r = grank.get(c);
+      let row = gRows.filter(x => x.rank === r).pop();
+      const wNeed = boxes.get(c).w + 2 * PADG;
+      if (!row || row.w + wNeed > maxRow) { row = { rank: r, list: [], w: 0 }; gRows.push(row); }
+      row.list.push(c); row.w += wNeed + PADG;
+    }
+    const gpos = new Map();
+    const placeGroups = () => {
+      let y = 0; const W = Math.max(...gRows.map(r => r.list.reduce((s, c) => s + boxes.get(c).w + 3 * PADG, 0)));
+      for (const r of gRows) {
+        const rw = r.list.reduce((s, c) => s + boxes.get(c).w + 3 * PADG, 0) - PADG; let x = (W - rw) / 2; const rh = Math.max(...r.list.map(c => boxes.get(c).h));
+        for (const c of r.list) { gpos.set(c, { x: x + PADG, y: y + (rh - boxes.get(c).h) / 2 }); x += boxes.get(c).w + 3 * PADG; }
+        y += rh + 3 * PADG;
+      }
+    };
+    placeGroups();
+    sweep(gRows.map(r => r.list), gPlain, c => gpos.has(c) ? gpos.get(c).x + boxes.get(c).w / 2 : null, 4);
+    placeGroups();
+    // 3. one more sweep inside the groups, with the neighbours in other groups
+    const nbAll = v => es.filter(e => e.from === v || e.to === v).map(e => e.from === v ? e.to : e.from);
+    const globalX = v => { const c = colorOf(v), b = boxes.get(c); return gpos.get(c).x + b.local.get(v).x; };
+    for (let round = 0; round < 4; round++) for (const [c, b] of boxes) { sweep(b.rows, nbAll, v => (boxes.has(colorOf(v)) ? globalX(v) : null), 1); b.place(); }
+    // then swaps of neighbours in a row wherever they remove crossings, until none does
+    const T0 = performance.now();
+    const posOf = v => { const c = colorOf(v), g = gpos.get(c), q = boxes.get(c).local.get(v); return { x: g.x + q.x, y: g.y + q.y }; };
+    const side = (a, b, c) => (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
+    const crossCount = () => { let n = 0; const P = new Map(ns.map(x => [x.id, posOf(x.id)])); for (let i = 0; i < es.length; i++) for (let j = i + 1; j < es.length; j++) { const e = es[i], f = es[j]; if (e.from === f.from || e.from === f.to || e.to === f.from || e.to === f.to) continue; const p1 = P.get(e.from), q1 = P.get(e.to), r1 = P.get(f.from), s1 = P.get(f.to); if ((side(r1, s1, p1) > 0) !== (side(r1, s1, q1) > 0) && (side(p1, q1, r1) > 0) !== (side(p1, q1, s1) > 0)) n++; } return n; };
+    let best = crossCount();
+    for (let pass = 0; pass < 20 && best && performance.now() - T0 < 2000; pass++) {
+      let improved = false;
+      for (const b of boxes.values()) for (const r of b.rows) for (let i = 0; i + 1 < r.length; i++) {
+        [r[i], r[i + 1]] = [r[i + 1], r[i]]; b.place();
+        const c = crossCount();
+        if (c < best) { best = c; improved = true; } else { [r[i], r[i + 1]] = [r[i + 1], r[i]]; b.place(); }
+      }
+      if (!improved) break;
+    }
+    // the area keeps its size after reordering; set the nodes
+    let cx = 0, cy = 0; for (const n of ns) { cx += n.x; cy += n.y; } cx /= ns.length; cy /= ns.length;
+    for (const [c, b] of boxes) for (const v of b.ids) { const p = b.local.get(v), g = gpos.get(c); out.set(v, { x: g.x + p.x, y: g.y + p.y }); }
+    let mx = 0, my = 0; for (const p of out.values()) { mx += p.x; my += p.y; } mx /= out.size; my /= out.size;
+    for (const [v, p] of out) { if (nodeById(v).pinned) { out.delete(v); continue; } p.x += cx - mx; p.y += cy - my; }
+    return out;
+  }
+  function byGroups() {
+    if (!state.nodes.length) return;
+    crossing.clear();
+    const targets = layoutByGroups();
+    if (!targets.size) { notice("Nothing to move."); return; }
+    checkpoint("Arranged by groups");
+    REGIONS = true; saveRegions();
+    animateTo(targets, () => { drawNodes(); drawEdges(); save(); fitView(); renderSide(); const n = countCrossings(); notice("Arranged by groups" + (n ? "; " + n + (n === 1 ? " crossing." : " crossings.") : "; no crossing links."), true); });
+  }
+  // Areas behind the groups: a soft rectangle around each group's nodes, with its name.
+  let REGIONS = (() => { try { return localStorage.getItem(BRAND.storageKey + ".regions") === "1"; } catch (err) { return false; } })();
+  const saveRegions = () => { try { localStorage.setItem(BRAND.storageKey + ".regions", REGIONS ? "1" : "0"); } catch (err) {} };
+  const regionLayer = document.createElementNS(SVGNS, "g");
+  regionLayer.setAttribute("class", "regions");
+  edgesSvg.insertBefore(regionLayer, edgesSvg.querySelector("defs").nextSibling);
+  function drawRegions() {
+    regionLayer.innerHTML = "";
+    if (!REGIONS) return;
+    const by = new Map();
+    for (const n of state.nodes) { if (n.color === BRAND.none || isSticker(n) || HIDDEN.has(n.color)) continue; if (!by.has(n.color)) by.set(n.color, []); by.get(n.color).push(n); }
+    const P = 22;
+    for (const [c, list] of by) {
+      let x1 = 1e9, y1 = 1e9, x2 = -1e9, y2 = -1e9;
+      for (const n of list) { const z = sizeOf(n); x1 = Math.min(x1, n.x - z.w / 2); x2 = Math.max(x2, n.x + z.w / 2); y1 = Math.min(y1, n.y - z.h / 2); y2 = Math.max(y2, n.y + z.h / 2); }
+      const r = document.createElementNS(SVGNS, "rect");
+      r.setAttribute("x", x1 - P); r.setAttribute("y", y1 - P - 16); r.setAttribute("width", x2 - x1 + 2 * P); r.setAttribute("height", y2 - y1 + 2 * P + 16);
+      r.setAttribute("rx", 14); r.setAttribute("fill", c); r.setAttribute("fill-opacity", ".07"); r.setAttribute("stroke", c); r.setAttribute("stroke-opacity", ".35"); r.setAttribute("stroke-width", "1");
+      const t = document.createElementNS(SVGNS, "text");
+      t.setAttribute("x", x1 - P + 12); t.setAttribute("y", y1 - P - 16 + 18); t.setAttribute("class", "rlabel"); t.setAttribute("fill", c);
+      t.textContent = groupName(c) || "";
+      regionLayer.appendChild(r); regionLayer.appendChild(t);
+    }
+  }
   // Spacing: 1 is as compact as readable; Loosen raises it in steps, Compact lowers it again.
   // Kept with the map in this browser.
   const spacing = () => state.spacing || 1;
@@ -1672,6 +1856,7 @@
   const arrangeMenu = anchor => openPop("Arrange", () => {
     const pinned = state.nodes.filter(n => n.pinned).length;
     opt("Untangle: few crossings, short links", () => { closePop(); untangle(); });
+    opt("By groups: areas, ranked by the arrows", () => { closePop(); byGroups(); });
     if (pinned) opt("Untangle everything, pinned nodes too", () => { closePop(); untangle(undefined, false); });
     opt("Loosen: more room between the nodes", () => { closePop(); loosen(); });
     opt("Compact: close the gaps, keep the order", () => { closePop(); compact(); });
@@ -1851,6 +2036,7 @@
   }
   function toText() {
     const keys = groupKeys(), out = [];
+    if (state.title) out.push("Map: " + state.title.replace(/\s+/g, " ").trim());
     for (const [c, k] of keys) out.push("Group: " + (state.legend[c] || "") + " #group-" + k + " #color-" + c.replace("#", "").toUpperCase() + (state.stickers && state.stickers[c] ? " #stickers" : ""));
     if (out.length) out.push("");
     for (const n of state.nodes) {
@@ -1875,9 +2061,12 @@
   // removed; otherwise it stays as it was. Throws with a list of faulty lines.
   function fromText(text, prev) {
     const errors = [], groups = new Map(), lines = [];
+    let mapTitle = "";
     String(text).split(/\r?\n/).forEach((raw, i) => {
       const line = raw.trim(); if (!line) return;
       const ln = i + 1;
+      const mt = /^Map:\s*(.*?)\s*$/.exec(line);
+      if (mt) { mapTitle = mt[1]; return; }
       const g = /^Group:\s*(.*?)\s*#group-(\S+)(?:\s+#color-([0-9a-fA-F]{6}))?(\s+#stickers)?\s*$/.exec(line);
       if (g) { groups.set(g[2].toLowerCase(), { name: g[1], color: g[3] ? "#" + g[3].toUpperCase() : null, stickers: !!g[4] }); return; }
       // text and note, then the run of tags at the end
@@ -1939,7 +2128,7 @@
     // nodes
     const stickers = {};
     for (const [k, g] of groups) if (g.stickers) stickers[keyColor(k)] = true;
-    const next = { nodes: [], edges: [], counter: prev.counter, legend, stickers, radialCenter: prev.radialCenter, spacing: prev.spacing };
+    const next = { nodes: [], edges: [], counter: prev.counter, legend, stickers, radialCenter: prev.radialCenter, spacing: prev.spacing, ...(mapTitle ? { title: mapTitle } : {}) };
     let maxId = Math.max(0, ...prev.nodes.map(n => numOf(n.id)), ...lines.map(n => n.id || 0));
     const prevById = new Map(prev.nodes.map(n => [numOf(n.id), n]));
     for (const l of lines) {

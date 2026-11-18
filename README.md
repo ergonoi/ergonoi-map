@@ -64,6 +64,13 @@ and the details come up as a sheet from below; on phones Map and Text are at the
 - *Unconnected nodes* (left column) lets the nodes without links stand out and the others
   step back.
 
+- *By groups* sets every group in an area of its own and ranks by the arrows: a node from
+  which arrows only go out stands at the top of its group, every arrow leads one row down;
+  the groups are ranked the same way by the arrows between them, groups of the same rank
+  stand side by side. The rows are ordered against crossings, also across groups. *Group
+  areas* (left column) shows a soft area with the name behind each group.
+- The name of the map is set in the menu under the title, and kept in its text.
+
 ## Groups
 
 A group is a name with a colour. Tap a group in the left column to hide or show its nodes,
