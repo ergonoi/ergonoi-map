@@ -401,7 +401,7 @@
   </ul>
   <h3>More</h3>
   <div class="btnrow"><button class="ghost" id="setDemo">Load the example</button><button class="ghost" id="setJsonImport">Restore an old backup (.json)</button></div>
-  <p class="hint">Version 0.6.8 · <a href="https://github.com/outheis-labs/outheis-map" target="_blank" rel="noopener">outheis-map</a></p>
+  <p class="hint">Version 0.6.9 · <a href="https://github.com/outheis-labs/outheis-map" target="_blank" rel="noopener">outheis-map</a></p>
   <input type="file" id="mdInput" accept=".md,.markdown" class="hidden">
   <input type="file" id="txtInput" accept=".txt,text/plain" class="hidden">
   <input type="file" id="jsonInput" accept=".json" class="hidden">
@@ -742,7 +742,7 @@
       <button type="button" class="mrow" data-f="ver">${ICO.ver}Versions<span class="r">${versionCount || ""}</span></button>
       <button type="button" class="mrow" data-f="imp">${ICO.imp}Markmap …<span class="r">import, export</span></button>
       <button type="button" class="mrow" data-f="print">${ICO.print}Print or PDF …<span class="r">A4–A0</span></button>
-      <div class="narrow"><div class="sepl"></div><button type="button" class="mrow" data-f="set">${ICO.set}Help</button><p class="hint">Version 0.6.8</p></div>`;
+      <div class="narrow"><div class="sepl"></div><button type="button" class="mrow" data-f="set">${ICO.set}Help</button><p class="hint">Version 0.6.9</p></div>`;
     box.innerHTML = h;
   }
   let gPress = null, gPressAt = 0, gPressKey = "";
@@ -942,7 +942,7 @@
     let x1 = 1e9, y1 = 1e9, x2 = -1e9, y2 = -1e9;
     for (const n of state.nodes) { const s = sizeOf(n); x1 = Math.min(x1, n.x - s.w / 2); y1 = Math.min(y1, n.y - s.h / 2); x2 = Math.max(x2, n.x + s.w / 2); y2 = Math.max(y2, n.y + s.h / 2); }
     const r = vp.getBoundingClientRect();
-    const s = Math.min(1.6, r.width / (x2 - x1 + 80), r.height / (y2 - y1 + 80));
+    const s = Math.min(3, r.width / (x2 - x1 + 48), r.height / (y2 - y1 + 48));
     view.s = s; view.x = (r.width - (x2 - x1) * s) / 2 - x1 * s; view.y = (r.height - (y2 - y1) * s) / 2 - y1 * s;
     applyView();
   }
@@ -2011,7 +2011,8 @@
       if (after > before * 0.98) { notice("As compact as it goes without overlaps."); return; }
     }
     checkpoint(f > 1 ? "More space" : "Less space");
-    animateTo(new Map([...P].map(([id, q]) => [id, { x: q.x, y: q.y }])), () => { save(); drawEdges(); });
+    // after each step the map fills the window again, with as little white around it as possible
+    animateTo(new Map([...P].map(([id, q]) => [id, { x: q.x, y: q.y }])), () => { save(); drawEdges(); fitView(); });
   }
   // Spacing: 1 is as compact as readable; Loosen raises it in steps, Compact lowers it again.
   // Kept with the map in this browser.
