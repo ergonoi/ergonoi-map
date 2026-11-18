@@ -8,7 +8,6 @@ Map: Summer trip
 Group: Places #group-places #color-218380
 Group: Things to do #group-things-to-do #color-FFB400
 Group: Status #group-status #color-2B3BD6 #stickers
-
 Summer trip #id-1 #id-2 #link-plain #id-4 #link-to #label-"before July" #at-5222,4092
 Lake shore {{bring towels}} #id-8 #group-places #id-2 #link-plain #id-9 #link-to #dashed #at-5160,4310 #pinned
 booked #id-12 #group-status #id-8 #link-plain #at-5000,4000

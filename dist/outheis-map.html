@@ -550,7 +550,7 @@
   <div class="btnrow"><button class="ghost" id="setDemo">Load the example</button><button class="ghost" id="setJsonImport">Restore an old backup (.json)</button></div>
   <h3>About</h3>
   <div class="about">
-    <p><strong><span class="brand">ergonoi Map</span></strong> · version 0.9.7</p>
+    <p><strong><span class="brand">ergonoi Map</span></strong> · version 0.9.8</p>
     <p>Author: Markus Schatzl</p>
     <p class="am"><span class="aproj">οὐθείς Map is an <b>ergonoi</b> project: </span><span class="one">Technology is potential. Accessibility makes it matter.</span></p>
     <p class="al"><a href="https://github.com/ergonoi/ergonoi-map#readme" target="_blank" rel="noopener">Documentation <svg width="8" height="8" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M1 9L9 1M9 1H3M9 1V7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></a><a href="https://github.com/ergonoi/ergonoi-map" target="_blank" rel="noopener">Source code on GitHub <svg width="8" height="8" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M1 9L9 1M9 1H3M9 1V7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></a><a href="https://ergonoi.com" target="_blank" rel="noopener">ergonoi.com <svg width="8" height="8" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M1 9L9 1M9 1H3M9 1V7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></a></p>
@@ -954,7 +954,7 @@
       <button type="button" class="mrow" data-f="ver">${ICO.ver}Versions<span class="r">${versionCount || ""}</span></button>
       <button type="button" class="mrow" data-f="imp">${ICO.imp}Markmap …<span class="r">import, export</span></button>
       <button type="button" class="mrow" data-f="print">${ICO.print}Print or PDF …<span class="r">A4–A0</span></button>
-      <div class="narrow"><div class="sepl"></div><button type="button" class="mrow" data-f="set">${ICO.set}Help</button><p class="hint">Version 0.9.7</p></div>`;
+      <div class="narrow"><div class="sepl"></div><button type="button" class="mrow" data-f="set">${ICO.set}Help</button><p class="hint">Version 0.9.8</p></div>`;
     box.innerHTML = h;
   }
   let gPress = null, gPressAt = 0, gPressKey = "";
@@ -2606,7 +2606,6 @@
     const keys = groupKeys(), out = [];
     if (state.title) out.push("Map: " + state.title.replace(/\s+/g, " ").trim());
     for (const [c, k] of keys) out.push("Group: " + (state.legend[c] || "") + " #group-" + k + " #color-" + c.replace("#", "").toUpperCase() + (state.stickers && state.stickers[c] ? " #stickers" : ""));
-    if (out.length) out.push("");
     for (const n of state.nodes) {
       let line = (n.title || "…").replace(/\s+/g, " ").trim();
       if (n.note) line += " {{" + n.note.replace(/\r?\n/g, "\\n").replace(/\}\}/g, "} }") + "}}";
