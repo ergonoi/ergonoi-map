@@ -175,7 +175,7 @@
     #sdim, #tools, #side .narrow { display:none !important; }
     html.noside { --sl:0px; } html.noside #side { display:none; }
     html.nodet { --sr:0px; } html.nodet #det { display:none !important; }
-    html.noside #tools, html.nodet #tools { display:flex !important; }
+    html.noside #tools { display:flex !important; }
     #det { top:var(--hh); left:auto; width:360px; max-height:none; border-radius:0; box-shadow:none; border-left:.5px solid var(--line); z-index:8; }
     #det .grab, #det .dh .x { display:none; }
     #det.hidden { display:block !important; }
@@ -681,7 +681,7 @@
       ${FILE.handle ? `<button type="button" class="mrow" data-f="disc">Disconnect the file</button>` : ""}
       <button type="button" class="mrow" data-f="ver">${ICO.ver}Versions<span class="r">${versionCount || ""}</span></button>
       <button type="button" class="mrow" data-f="imp">${ICO.imp}Import Markmap …</button>
-      <div class="narrow"><div class="sepl"></div><button type="button" class="mrow" data-f="set">${ICO.set}Settings</button><p class="hint">Version 0.5.0</p></div>`;
+      <div class="narrow"><div class="sepl"></div><button type="button" class="mrow" data-f="set">${ICO.set}Settings</button><p class="hint">Version 0.5.1</p></div>`;
     box.innerHTML = h;
   }
   let gPress = null, gPressAt = 0, gPressKey = "";
@@ -724,7 +724,7 @@
     }
     if (b.dataset.gadd) {
       const c = freeColors()[0]; if (!c) { notice("All colours are in use; choose another colour in Edit."); return; }
-      checkpoint("New group"); state.legend[c] = "New group"; save();
+      checkpoint("New group"); freshColor(c); state.legend[c] = "New group"; save();
       renderSide();
       const inp = $("side").querySelector(`[data-gname="${c}"]`); if (inp) { inp.focus(); inp.select(); }
       return;
@@ -787,8 +787,14 @@
       for (const [k, v] of Object.entries(state.legend)) next[k === c ? f : k] = v;
       state.legend = next;
     }
-    save(); redraw();
+    // hiding and stickers go with the group to its new colour
+    if (HIDDEN.has(c)) { HIDDEN.delete(c); HIDDEN.add(f); saveHidden(); }
+    if (state.stickers && state.stickers[c]) { delete state.stickers[c]; state.stickers[f] = true; }
+    save(); redraw(); renderSide();
   }
+  // A colour that becomes a new group starts visible and as nodes, whatever an earlier group
+  // of that colour was set to.
+  function freshColor(c) { HIDDEN.delete(c); saveHidden(); if (state.stickers) delete state.stickers[c]; }
   // Deleting a group: without nodes it just goes; with nodes the menu asks which group they
   // get instead (or no group), or deletes them as well.
   function deleteGroup(c, anchor) {
@@ -1066,7 +1072,11 @@
       const colors = [...new Set([...groupColors().filter(c => c !== BRAND.none), BRAND.none])];
       for (const c of colors) {
         const name = groupName(c) || "unnamed";
-        opt(name, () => { checkpoint("Group"); for (const id of ids) nodeById(id).color = c; save(); redraw(); closePop(); renderSide(); }, ids.every(id => nodeById(id).color === c) ? "cur" : "", `<span class="ln" style="background:${esc(c)}"></span>${esc(name)}`);
+        opt(name, () => {
+          checkpoint("Group"); for (const id of ids) nodeById(id).color = c; save(); redraw(); closePop(); renderSide();
+          if (HIDDEN.has(c)) notice(name + " is hidden, and the node with it; the eye in the left column shows it.", true);
+          else if (state.stickers && state.stickers[c]) notice(name + " is shown as stickers; the node now appears as a sticker on the nodes linked to it.", true);
+        }, ids.every(id => nodeById(id).color === c) ? "cur" : "", `<span class="ln" style="background:${esc(c)}"></span>${esc(name)}`);
       }
       if (freeColors().length) {
         const nb = opt("New group …", () => {
@@ -1077,7 +1087,7 @@
           const apply = () => {
             const v = inp.value.trim(); if (!v) { closePop(); return; }
             const c = freeColors()[0];
-            checkpoint("New group"); state.legend[c] = v; for (const id of ids) nodeById(id).color = c;
+            checkpoint("New group"); freshColor(c); state.legend[c] = v; for (const id of ids) nodeById(id).color = c;
             save(); redraw(); closePop(); renderSide();
           };
           row.querySelector(".ok").onclick = apply;
@@ -2341,6 +2351,8 @@
   if (loaded === "bad") notice("The stored map could not be read; it is kept aside in this browser, untouched.");
   $("empty").classList.toggle("hidden", state.nodes.length > 0);
   if (canFile) idb.get("file").then(async h => { if (!h) return; FILE.handle = h; FILE.name = h.name; FILE.needsPermission = (await h.queryPermission({ mode: "readwrite" })) !== "granted"; status(); }).catch(() => {});
+  // hiding or stickers left from groups that no longer exist are dropped
+  { const live = new Set(groupColors()); let ch = false; for (const c of [...HIDDEN]) if (!live.has(c)) { HIDDEN.delete(c); ch = true; } if (ch) saveHidden(); if (state.stickers) for (const c of Object.keys(state.stickers)) if (!live.has(c)) delete state.stickers[c]; }
   applyCols(); fitHeader(); renderSide(); renderDetail(); countVersions().then(renderSide); applyView(); fitView(); status();
   // Never rearranged on its own. A map too wide to read when fitted opens at a readable
   // size around its centre; Arrange → Compact closes the gaps.
