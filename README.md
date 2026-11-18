@@ -4,6 +4,8 @@ A mind map in a single HTML file: nodes in groups, links with or without directi
 for every node. It runs in the browser without a server and without loading anything from
 the network.
 
+Author: Markus Schatzl
+
 Open it at https://outheis-labs.github.io/outheis-map/ and, if you like, install it as an
 app from there (see *Install as an app*). Or download `dist/outheis-map.html` and open the
 file; it works the same.
