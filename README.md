@@ -42,7 +42,9 @@ and the details come up as a sheet from below; on phones Map and Text are at the
   near its edge only selects it (on touch screens the name is edited in the details). A double click on a node makes a new node linked to it,
   in the same group, on a free place beside it.
 - Links: a click on a link sets its label, the arrow (none, either direction, both ends)
-  and a solid or dashed line. Labels sit horizontally beside the line where they cover no
+  and a solid or dashed line. Directions are always seen from the selected node (*from
+  here*, *to here*); in its details every link carries a small drawn arrow that opens this
+  menu. Labels sit horizontally beside the line where they cover no
   node and no other label.
 - The pin on a node keeps it in place: Untangle leaves it where it is. Pins are set and
   released only on purpose, with a click on the pin of the selected node (faint while

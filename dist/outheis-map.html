@@ -109,6 +109,10 @@
   #pop .seg { display:flex; gap:6px; padding:6px 16px 10px; flex-wrap:wrap; }
   #pop .seg button { min-height:36px; min-width:44px; padding:0 10px; font-size:15px; }
   #pop .seg button[aria-pressed="true"] { background:var(--fg); color:var(--page); border-color:var(--fg); }
+  #pop .seg button svg { display:block; }
+  #det .kv .dir { display:inline-flex; align-items:center; justify-content:center; width:38px; min-height:30px; margin-right:2px; border:.5px solid var(--line); border-radius:6px; color:var(--fg2); flex:none; }
+  #det .kv .dir:hover { border-color:var(--fg2); }
+  #det .kv .dir svg { width:26px; height:16px; }
   /* Detail of the chosen node */
   #det { position:fixed; z-index:16; left:0; right:0; bottom:0; max-height:62vh; overflow-y:auto; background:var(--page); border-radius:16px 16px 0 0; box-shadow:0 -8px 30px rgba(0,0,0,.16); padding:8px 0 calc(20px + env(safe-area-inset-bottom)); }
   #det .grab { width:40px; height:5px; border-radius:3px; background:var(--line); margin:0 auto 6px; }
@@ -673,7 +677,7 @@
       ${FILE.handle ? `<button type="button" class="mrow" data-f="disc">Disconnect the file</button>` : ""}
       <button type="button" class="mrow" data-f="ver">${ICO.ver}Versions<span class="r">${versionCount || ""}</span></button>
       <button type="button" class="mrow" data-f="imp">${ICO.imp}Import Markmap …</button>
-      <div class="narrow"><div class="sepl"></div><button type="button" class="mrow" data-f="set">${ICO.set}Settings</button><p class="hint">Version 0.4.6</p></div>`;
+      <div class="narrow"><div class="sepl"></div><button type="button" class="mrow" data-f="set">${ICO.set}Settings</button><p class="hint">Version 0.4.7</p></div>`;
     box.innerHTML = h;
   }
   let gPress = null, gPressAt = 0, gPressKey = "";
@@ -919,7 +923,8 @@
         if (ev.clientX > r.left + ix && ev.clientX < r.right - ix && ev.clientY > r.top + iy && ev.clientY < r.bottom - iy) startEdit(g.n);
       }
     } else if (g.kind === "edge") {
-      sel.clear(); selEdge = g.eid; drawNodes(); drawEdges(); edgeMenu(state.edges.find(e => e.id === g.eid), ev);
+      const ref = sel.size === 1 ? [...sel][0] : null;
+      sel.clear(); selEdge = g.eid; drawNodes(); drawEdges(); edgeMenu(state.edges.find(e => e.id === g.eid), ev, ref);
     } else {
       if (linking) { linking = null; drawNodes(); notice("Not connected."); }
       sel.clear(); selEdge = null; closePop(); drawNodes(); drawEdges(); closeDetail();
@@ -1081,9 +1086,9 @@
     const n = nodeById(ids[0]), links = edgesOf(n.id);
     const others = links.map(e => ({ e, m: nodeById(e.from === n.id ? e.to : e.from) })).filter(o => o.m);
     // The heading: the group as a stick (click: another group) and the name (click: edit).
-    const arrow = o => o.e.both ? " ↔" : o.e.directed ? (o.e.from === n.id ? " →" : " ←") : "";
+    const arrow = o => `<span class="dir" role="button" data-dedge="${esc(o.e.id)}" title="Link from ${esc(n.title)}: arrow, label, line">${ARROW_ICON(dirFrom(o.e, n.id))}</span>`;
     box.innerHTML = `<div class="grab"></div><div class="dh"><div class="tw"><div class="cap">Node</div><div class="hrow"><button class="stk" data-dgroup="1" title="Group: ${esc(groupName(n.color) || "unnamed")}. Click to change" aria-label="Group ${esc(groupName(n.color) || "unnamed")}, change"><i style="background:${esc(n.color)}"></i></button><span class="fwrap"><input id="detTitle" value="${esc(n.title)}" aria-label="Name of the node" title="Click to edit"><button type="button" class="fclear" data-fclear="detTitle" aria-label="Clear the name" title="Clear">${CLEAR}</button></span></div><div class="sub">${esc(groupName(n.color) || "no group")} · ${others.length} ${others.length === 1 ? "link" : "links"}${n.pinned ? " · pinned" : ""}</div></div>${x}</div>
-      ${others.length ? `<div class="kv">${others.map((o, i) => `<div class="k">${i ? "" : "Links"}</div><div><button class="v" data-dgo="${esc(o.m.id)}">${vstick(o.m.color)}${esc(o.m.title)}${arrow(o)}${o.e.label ? ` <span style="color:var(--muted);font-size:14px">· ${esc(o.e.label)}</span>` : ""}</button></div>`).join("")}</div>` : ""}
+      ${others.length ? `<div class="kv">${others.map((o, i) => `<div class="k">${i ? "" : "Links"}</div><div><button class="v" data-dgo="${esc(o.m.id)}">${arrow(o)}${vstick(o.m.color)}${esc(o.m.title)}${o.e.label ? ` <span style="color:var(--muted);font-size:14px">· ${esc(o.e.label)}</span>` : ""}</button></div>`).join("")}</div>` : ""}
       <h4>Note</h4><span class="fwrap note"><textarea id="detNote" maxlength="5000" placeholder="More about this node: text, a link, an address …">${esc(n.note || "")}</textarea><button type="button" class="fclear" data-fclear="detNote" aria-label="Clear the note" title="Clear">${CLEAR}</button></span>
       <div class="acts"><button class="primary" data-dnew="1">+ Linked node</button><button data-dlink="1">Link to …</button><button class="danger" data-ddel="1">Delete</button></div>
       <div class="more"><button data-dpin="1">${n.pinned ? "Release the pin" : "Keep in place (pin)"}</button><button data-dcenter="1" title="Untangle with this node in the middle">Untangle around it</button></div>`;
@@ -1094,6 +1099,8 @@
     if (b.dataset.fclear) { const f = $(b.dataset.fclear); f.value = ""; f.focus(); return; }
     if (b.dataset.dx) { sel.clear(); drawNodes(); closeDetail(); return; }
     if (b.dataset.dgroup) { groupChooser(ids, b); return; }
+    const dEdge = ev.target.closest("[data-dedge]");
+    if (dEdge && n) { const e = state.edges.find(x => x.id === dEdge.dataset.dedge); const r = dEdge.getBoundingClientRect(); edgeMenu(e, { clientX: r.left, clientY: r.bottom }, n.id); return; }
     if (b.dataset.dgo) { sel.clear(); sel.add(b.dataset.dgo); drawNodes(); drawEdges(); renderDetail(); const m = nodeById(b.dataset.dgo); const r = vp.getBoundingClientRect(); const p = toWorld(r.left + r.width / 2, r.top + r.height / 2); if (Math.abs(p.x - m.x) * view.s > r.width / 3 || Math.abs(p.y - m.y) * view.s > r.height / 3) { view.x += (p.x - m.x) * view.s; view.y += (p.y - m.y) * view.s; applyView(); } return; }
     if (b.dataset.dnew && n) { newLinked(n); return; }
     if (b.dataset.dlink && n) { linking = n.id; drawNodes(); if (!wide()) $("det").classList.add("hidden"); notice("Tap the node to connect to."); return; }
@@ -1113,10 +1120,20 @@
   });
   $("det").addEventListener("keydown", ev => { if (ev.target.id === "detTitle" && ev.key === "Enter") ev.target.blur(); ev.stopPropagation(); });
 
-  function edgeMenu(e, ev) {
+  // Arrow icons, drawn: a line, with a head at the far end (away from the reference node),
+  // at the near end (towards it), or at both.
+  const ARROW_ICON = kind => {
+    const head = (x, dir) => `<path d="M${x - 6 * dir} 6 L${x} 12 L${x - 6 * dir} 18" fill="none"/>`;
+    return `<svg width="34" height="20" viewBox="0 0 34 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12 H30"/>${kind === "out" || kind === "both" ? head(30, 1) : ""}${kind === "in" || kind === "both" ? head(4, -1) : ""}</svg>`;
+  };
+  // The direction of a link seen from a node: "out", "in", "both" or "none".
+  const dirFrom = (e, id) => e.both ? "both" : !e.directed ? "none" : e.from === id ? "out" : "in";
+  // ref: the node the directions are seen from; the selected node if it is an end of the link.
+  function edgeMenu(e, ev, ref) {
     if (!e) return;
-    const a = nodeById(e.from), b = nodeById(e.to);
-    openPop("Link", () => {
+    if (ref !== e.from && ref !== e.to) ref = e.from;
+    const R = nodeById(ref), O = nodeById(ref === e.from ? e.to : e.from);
+    openPop("Link from " + (R ? R.title : ""), () => {
       const row = document.createElement("div"); row.className = "row";
       row.innerHTML = `<input aria-label="Label of the link" placeholder="Label" value="${esc(e.label || "")}"><button class="ok" aria-label="Apply">✓</button>`;
       pop.appendChild(row);
@@ -1124,12 +1141,17 @@
       const apply = () => { const v = inp.value.trim(); if (v !== (e.label || "")) { checkpoint("Label"); if (v) e.label = v; else delete e.label; save(); drawEdges(); renderDetail(); } closePop(); };
       row.querySelector(".ok").onclick = apply;
       inp.onkeydown = k => { if (k.key === "Enter") apply(); k.stopPropagation(); };
-      lbl("Arrow");
-      const cur = e.both ? "both" : !e.directed ? "none" : "to";
+      lbl("Arrow, seen from " + (R ? R.title : "this node"));
+      const cur = dirFrom(e, ref);
       const seg = document.createElement("div"); seg.className = "seg";
-      const setDir = d => { checkpoint("Arrow"); if (d === "none") { e.directed = false; e.both = false; } else if (d === "both") { e.directed = true; e.both = true; } else { if (d === "back") [e.from, e.to] = [e.to, e.from]; e.directed = true; e.both = false; } save(); drawEdges(); renderDetail(); closePop(); };
-      for (const [d, t, tip] of [["none", "—", "No arrow"], ["to", "→", "Arrow to " + (b ? b.title : "")], ["back", "←", "Arrow to " + (a ? a.title : "")], ["both", "↔", "Arrows at both ends"]]) {
-        const bt = document.createElement("button"); bt.textContent = t; bt.title = tip; bt.setAttribute("aria-label", tip);
+      const setDir = d => {
+        checkpoint("Arrow");
+        e.both = d === "both"; e.directed = d !== "none";
+        if (d === "out") { e.from = ref; e.to = O.id; } else if (d === "in") { e.from = O.id; e.to = ref; }
+        save(); drawEdges(); renderDetail(); closePop();
+      };
+      for (const [d, tip] of [["none", "No arrow"], ["out", "From " + (R ? R.title : "") + " to " + (O ? O.title : "")], ["in", "From " + (O ? O.title : "") + " to " + (R ? R.title : "")], ["both", "Arrows at both ends"]]) {
+        const bt = document.createElement("button"); bt.innerHTML = ARROW_ICON(d); bt.title = tip; bt.setAttribute("aria-label", tip);
         bt.setAttribute("aria-pressed", String(d === cur)); bt.onclick = () => setDir(d); seg.appendChild(bt);
       }
       pop.appendChild(seg);
@@ -1388,7 +1410,7 @@
       // length cost: squared in units of L, so that one long link weighs more than several short ones
       const lenOf = (P, list) => list.reduce((s, e) => { const d = Math.hypot(P.get(e.from).x - P.get(e.to).x, P.get(e.from).y - P.get(e.to).y) / L; return s + d * d; }, 0) * L;
       const score = P => allCross(P) * 1000 + lenOf(P, ce) / L;
-      const overlaps = (P, v, p) => ids.some(w => w !== v && Math.abs(P.get(w).x - p.x) < (sz.get(w).w + sz.get(v).w) / 2 + 14 && Math.abs(P.get(w).y - p.y) < (sz.get(w).h + sz.get(v).h) / 2 + 10);
+      const overlaps = (P, v, p) => ids.some(w => w !== v && Math.abs(P.get(w).x - p.x) < (sz.get(w).w + sz.get(v).w) / 2 + 14 * spacing() && Math.abs(P.get(w).y - p.y) < (sz.get(w).h + sz.get(v).h) / 2 + 10 * spacing());
 
       // 2. springs and repulsion (nodes placed by hand do not move)
       const relax = (P, iters) => {
@@ -1511,6 +1533,8 @@
             for (const f of [0.5, 0.25, 0.12]) {
               const cand = { x: here.x + (cx - here.x) * f, y: here.y + (cy - here.y) * f };
               if (Math.hypot(cand.x - here.x, cand.y - here.y) < 3 || overlaps(P, v, cand)) continue;
+              // not closer than the spacing allows: links keep at least 80 % of their length L
+              if (nb.some(w => Math.hypot(P.get(w).x - cand.x, P.get(w).y - cand.y) < 0.8 * L)) continue;
               P.set(v, cand);
               if (crossingsIn(P, incident.get(v)) <= c0) { moved = true; break; }
               P.set(v, here);
