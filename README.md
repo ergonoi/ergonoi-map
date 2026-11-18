@@ -61,14 +61,19 @@ and the details come up as a sheet from below; on phones Map and Text are at the
   links below. Pinned nodes stay where they are and Untangle improves the rest from
   where it is; *Arrange → Untangle everything, pinned nodes too* lays out all of it. *Loosen* gives more room in
   steps, *Compact* closes the gaps again.
-- *Unconnected nodes* (left column) lets the nodes without links stand out and the others
-  step back.
+- Under *Arrange* in the left column, the layouts (Untangle, By groups, Loosen, Compact) form
+  one row; below them, in Teal, the helpers that only show something: *Overlaps* (pushes
+  overlapping nodes apart and marks crossing links), *Unconnected* (nodes without any link
+  stand out, the others step back; a link to a sticker counts) and *Areas* (a soft area
+  behind each group). *Fit* is always on the map, bottom right; *Arrange* appears there too
+  when the left column is folded.
+- The gear opens a short help, the example and the restore of an old backup. Markmap import
+  and export are under *File*.
 
 - *By groups* sets every group in an area of its own and ranks by the arrows: a node from
   which arrows only go out stands at the top of its group, every arrow leads one row down;
   the groups are ranked the same way by the arrows between them, groups of the same rank
-  stand side by side. The rows are ordered against crossings, also across groups. *Group
-  areas* (left column) shows a soft area with the name behind each group.
+  stand side by side. The rows are ordered against crossings, also across groups.
 - The name of the map is set in the menu under the title, and kept in its text.
 - *Print or PDF …* (left column, or the menu under the title) prints the map on DIN A4 to
   A0, portrait or landscape; *Save as PDF* in the browser's print dialog makes the PDF. For

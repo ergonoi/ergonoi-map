@@ -103,6 +103,9 @@
   #side .mrow .r { margin-left:auto; color:var(--muted); font-size:14px; max-width:50%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   #side .sepl { border-top:.5px solid var(--line); margin:10px 0; }
   #side .hint { font-size:13px; color:var(--muted); padding:4px 20px; margin:0; }
+  #side .row2.help button { border-color:var(--ok); color:var(--ok); }
+  #side .row2.help button[aria-pressed="true"] { background:var(--ok); color:#fff; }
+  #side .row2.help .n { font-size:12px; opacity:.8; margin-left:2px; }
   #side .srow { display:flex; align-items:center; gap:10px; width:100%; min-height:38px; padding:0 16px 0 20px; border:0; border-radius:0; text-align:left; font-size:15px; color:var(--fg); }
   #side .srow .n { margin-left:auto; color:var(--muted); font-size:12px; }
   #side .srow .swt { margin-left:auto; flex:none; width:30px; height:18px; border-radius:9px; background:#DAD7D7; position:relative; transition:background .15s; }
@@ -176,10 +179,12 @@
   @media (min-width: 1100px) {
     :root { --sl:310px; --sr:360px; }
     #side { transform:none; top:var(--hh); width:310px; background:var(--side); z-index:8; transition:none; }
-    #sdim, #tools, #side .narrow { display:none !important; }
+    #sdim, #side .narrow { display:none !important; }
+    /* Fit is always on the map; Arrange only when the left column with its Arrange is folded */
+    #tools #btnArrange { display:none; }
+    html.noside #tools #btnArrange { display:inline-flex; }
     html.noside { --sl:0px; } html.noside #side { display:none; }
     html.nodet { --sr:0px; } html.nodet #det { display:none !important; }
-    html.noside #tools { display:flex !important; }
     #det { top:var(--hh); left:auto; width:360px; max-height:none; border-radius:0; box-shadow:none; border-left:.5px solid var(--line); z-index:8; }
     #det .grab, #det .dh .x { display:none; }
     #det.hidden { display:block !important; }
@@ -323,7 +328,7 @@
     <nav class="vtabs" aria-label="View"><button class="tab" id="tabMap" aria-pressed="true">Map</button><button class="tab" id="tabText" aria-pressed="false">Text</button></nav>
     <button id="btnAdd" title="New node" aria-label="New node"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>+ Node</span></button>
     <button id="btnDet" class="ib" title="Show or hide the details column (\)" aria-label="Details column" aria-pressed="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="1.5"/><path d="M14.5 4.5v15"/></svg></button>
-    <button id="btnSettings" class="ib" title="Settings" aria-label="Settings"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+    <button id="btnSettings" class="ib" title="Help" aria-label="Help"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
   </div>
 </header>
 <div id="sdim" class="hidden"></div>
@@ -381,29 +386,18 @@
 </dialog>
 
 <dialog id="dlgSettings">
-  <div class="dhead"><strong>Settings</strong><button class="x" id="setClose" aria-label="Close">×</button></div>
-  <h3>Layout</h3>
-  <div class="btnrow"><button class="sec" id="setUnpin">Release all pins</button></div>
-  <h3>Markmap</h3>
-  <div class="btnrow">
-    <button class="sec" id="setMdExport">Export Markmap (.md)</button>
-    <button class="ghost" id="setJsonImport">Restore an old backup (.json)</button>
-  </div>
-  <p class="hint">For markmap.js.org and other programs: a tree of headings and lists; positions, colours, notes and further links ride along in its front matter.</p>
-  <h3>Example</h3>
-  <div class="btnrow"><button class="ghost" id="setDemo">Load the example (replaces this map)</button></div>
-  <h3>Use</h3>
+  <div class="dhead"><strong>Help</strong><button class="x" id="setClose" aria-label="Close">×</button></div>
   <ul>
-    <li>Tap a node: its details open (on the right on wide screens, from below on phones): name, group, links, note, and the actions. The grey dot on its corner opens its note; it is dark when there is one.</li>
-    <li>A selected node shows a blue handle on its right: drag it onto another node to link the two, or onto free space for a new linked node.</li>
-    <li>Drag a node to move it; it then stays where you put it, and layouts leave it. Drag the canvas to move the view; pinch or scroll to zoom.</li>
-    <li>Groups are in the panel (☰ on smaller screens): tap one to hide or show it, press and hold to show only this one. <i>Edit</i> renames them and changes their colours.</li>
-    <li>On a computer the two side columns fold away with ☰ (left) and the column symbol next to Settings (right), or both at once with the key \, so that the map takes the whole window.</li>
-    <li><i>Link to …</i> in the details links the node to the next one you tap, as the handle does by dragging.</li>
-    <li>Text shows the map as lines to read, select, copy and edit; Apply (or going back to Map) takes the edit over.</li>
-    <li>Arrange → Compact (in the left column, or on the map on smaller screens) closes the gaps and keeps the order; Untangle leaves pinned nodes where they are. A node is pinned only on purpose: a click on the pin of the selected node, or <i>Keep in place</i> in its details.</li>
-    <li>With a mouse: double-click on the canvas for a new node, Ctrl/Cmd+click to select several, Shift+drag from a node to link it. Keys: 0 fits the map, Delete removes the selection, Ctrl/Cmd+Z undoes.</li>
+    <li>Click a node in the middle to rename it, near its edge to select it; its details are on the right.</li>
+    <li>Drag the blue handle of a selected node onto another to link them, or onto free space for a new linked node.</li>
+    <li>Double click a node: a new node of its group beside it. Double click the canvas: a new node there.</li>
+    <li>A click on a link sets its label, arrow and line; directions are seen from the selected node.</li>
+    <li>Keys: 0 fits the map, \ folds both columns, Delete removes the selection, Ctrl/Cmd+Z undoes; Ctrl/Cmd+click selects several.</li>
+    <li>Text shows the map as lines; Apply takes an edit over.</li>
   </ul>
+  <h3>More</h3>
+  <div class="btnrow"><button class="ghost" id="setDemo">Load the example</button><button class="ghost" id="setJsonImport">Restore an old backup (.json)</button></div>
+  <p class="hint">Version 0.6.3 · <a href="https://github.com/outheis-labs/outheis-map" target="_blank" rel="noopener">outheis-map</a></p>
   <input type="file" id="mdInput" accept=".md,.markdown" class="hidden">
   <input type="file" id="txtInput" accept=".txt,text/plain" class="hidden">
   <input type="file" id="jsonInput" accept=".json" class="hidden">
@@ -713,10 +707,11 @@
     h += `<button type="button" class="act" data-gadd="1">+ Add group</button>`;
     // a link to a sticker is a link: only nodes without any link count as unconnected
     const loose = state.nodes.filter(n => !isSticker(n) && !edgesOf(n.id).length).length;
-    // Show: two rows with a switch, as settings rows (no large buttons)
-    const SW = on => `<span class="swt${on ? " on" : ""}" aria-hidden="true"></span>`;
-    h += `<h3>Show</h3><button type="button" class="srow" data-unconn="1" role="switch" aria-checked="${UNCONN}" title="Nodes without any link stand out; the others step back">Unconnected nodes<span class="n">${loose}</span>${SW(UNCONN)}</button><button type="button" class="srow" data-regions="1" role="switch" aria-checked="${REGIONS}" title="A soft area with its name behind each group">Group areas${SW(REGIONS)}</button>`;
-    h += `<div class="wide"><h3>Arrange</h3><div class="row2"><button type="button" data-ar="untangle">Untangle</button><button type="button" data-ar="groups" title="Groups as areas, ranked by their arrows">By groups</button><button type="button" data-ar="loosen">Loosen</button><button type="button" data-ar="compact">Compact</button><button type="button" data-ar="overlaps">Overlaps</button><button type="button" data-ar="fit">Fit</button>${state.nodes.some(n => n.pinned) ? `<button type="button" data-ar="unpin" title="Release every pinned node">Unpin all (${state.nodes.filter(n => n.pinned).length})</button>` : ""}</div></div>`;
+    // Arrange: the layouts in one row; below, in another colour, the helpers that only show
+    // something (Overlaps marks, Unconnected and Areas switch on and off, Fit moves the view).
+    const pinsN = state.nodes.filter(n => n.pinned).length;
+    h += `<h3>Arrange</h3><div class="row2 wide"><button type="button" data-ar="untangle">Untangle</button><button type="button" data-ar="groups" title="Groups as areas, ranked by their arrows">By groups</button><button type="button" data-ar="loosen">Loosen</button><button type="button" data-ar="compact">Compact</button>${pinsN ? `<button type="button" data-ar="unpin" title="Release every pinned node">Unpin all (${pinsN})</button>` : ""}</div>`
+      + `<div class="row2 help"><button type="button" data-ar="overlaps" title="Push overlapping nodes apart and mark crossing links">Overlaps</button><button type="button" data-unconn="1" aria-pressed="${UNCONN}" title="Nodes without any link stand out; the others step back">Unconnected <span class="n">${loose}</span></button><button type="button" data-regions="1" aria-pressed="${REGIONS}" title="A soft area with its name behind each group">Areas</button></div>`;
     const fileR = FILE.handle ? esc(FILE.name) : canFile ? "" : "download";
     h += `<h3>File</h3>
       <button type="button" class="mrow" data-f="open">${ICO.open}Open …</button>
@@ -724,9 +719,9 @@
       ${FILE.handle && FILE.needsPermission ? `<button type="button" class="mrow" data-f="resume">Resume writing</button>` : ""}
       ${FILE.handle ? `<button type="button" class="mrow" data-f="disc">Disconnect the file</button>` : ""}
       <button type="button" class="mrow" data-f="ver">${ICO.ver}Versions<span class="r">${versionCount || ""}</span></button>
-      <button type="button" class="mrow" data-f="imp">${ICO.imp}Import Markmap …</button>
+      <button type="button" class="mrow" data-f="imp">${ICO.imp}Markmap …<span class="r">import, export</span></button>
       <button type="button" class="mrow" data-f="print">${ICO.print}Print or PDF …<span class="r">A4–A0</span></button>
-      <div class="narrow"><div class="sepl"></div><button type="button" class="mrow" data-f="set">${ICO.set}Settings</button><p class="hint">Version 0.6.2</p></div>`;
+      <div class="narrow"><div class="sepl"></div><button type="button" class="mrow" data-f="set">${ICO.set}Help</button><p class="hint">Version 0.6.3</p></div>`;
     box.innerHTML = h;
   }
   let gPress = null, gPressAt = 0, gPressKey = "";
@@ -795,7 +790,11 @@
     else if (f === "resume") resumeFile();
     else if (f === "disc") $("fileDisconnect").click();
     else if (f === "ver") { renderVersions(); $("dlgVersions").showModal(); }
-    else if (f === "imp") $("mdInput").click();
+    else if (f === "imp") openPop("Markmap", () => {
+      opt("Import a Markmap file (.md) …", () => { closePop(); $("mdInput").click(); });
+      opt("Export as Markmap (.md)", () => { closePop(); download(BRAND.file + ".md", "text/markdown", markmapExportText()); });
+      lbl("For markmap.js.org and other programs");
+    }, b);
     else if (f === "print") { openSide(false); openPrint(); }
     else if (f === "set") { openSide(false); $("dlgSettings").showModal(); }
   });
@@ -2155,10 +2154,8 @@
   $("btnSettings").onclick = () => { closePop(); openSide(false); $("dlgSettings").showModal(); };
   $("verClose").onclick = () => $("dlgVersions").close();
   $("setClose").onclick = () => $("dlgSettings").close();
-  $("setUnpin").onclick = () => { checkpoint("Released all"); state.nodes.forEach(n => n.pinned = false); save(); drawNodes(); $("dlgSettings").close(); notice("All nodes released.", true); };
-  $("setMdExport").onclick = () => { download(BRAND.file + ".md", "text/markdown", markmapExportText()); };
   $("setJsonImport").onclick = () => $("jsonInput").click();
-  $("setDemo").onclick = () => { checkpoint("Example loaded"); $("dlgSettings").close(); demo(); notice("Example loaded.", true); };
+  $("setDemo").onclick = () => { checkpoint("Example loaded"); $("dlgSettings").close(); demo(); notice("Example loaded; Undo brings your map back.", true); };
   $("emptyDemo").onclick = () => { checkpoint("Example loaded"); demo(); };
   $("emptyAdd").onclick = () => $("btnAdd").click();
   $("mdInput").onchange = () => {
