@@ -77,19 +77,19 @@
   #side h3 button { margin-left:auto; min-height:28px; padding:0 8px; font-size:12px; letter-spacing:0; text-transform:none; }
   /* A group: its colour (tap: choose another), its name (tap: edit in place), the number of
      nodes, and an eye that hides or shows it (press and hold: only this group). */
-  #side .grp { display:flex; align-items:center; gap:8px; min-height:44px; padding:0 10px 0 16px; font-size:16px; color:var(--fg); }
+  #side .grp { display:flex; align-items:center; gap:2px; min-height:44px; padding:0 6px 0 14px; font-size:16px; color:var(--fg); }
   #side .grp .swb { border:0; min-width:0; min-height:var(--tap); padding:0 4px; display:inline-flex; align-items:center; background:transparent; }
   #side .grp .gn { flex:1; min-width:0; font:inherit; font-size:16px; min-height:36px; border:0; border-bottom:.5px solid transparent; background:transparent; color:var(--fg); outline:none; padding:0 2px; cursor:text; }
   #side .grp .gn:hover { border-bottom-color:var(--line); }
   #side .grp .gn:focus { border-bottom-color:var(--fg); }
   #side .grp span.gn { display:flex; align-items:center; cursor:default; }
-  #side .grp .eye { border:0; min-width:36px; min-height:var(--tap); padding:0; display:inline-flex; align-items:center; justify-content:center; color:var(--fg2); -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
+  #side .grp .eye { border:0; min-width:32px; min-height:var(--tap); padding:0; display:inline-flex; align-items:center; justify-content:center; color:var(--fg2); -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
   #side .grp.off .sw, #side .grp.off .gn, #side .grp.off .n { opacity:var(--off); }
   #side .grp.off .eye { color:var(--muted); }
   /* Groups are marked with a vertical colour stick, as in the summaries (title menu, links). */
   #side .grp .sw, #side .gedit .sw { width:6px; height:18px; border-radius:1px; flex:none; display:block; }
   #side .grp .swb { min-width:28px !important; justify-content:center; }
-  #side .grp .n { margin-left:auto; color:var(--muted); font-size:12px; }
+  #side .grp .n { margin-left:auto; color:var(--muted); font-size:12px; min-width:22px; text-align:right; padding-right:4px; }
   #side .grp .nameless { font-style:italic; color:var(--muted); }
   #side .gedit { display:flex; align-items:center; gap:12px; padding:0 20px; min-height:44px; }
   #side .gedit .swb { border:0; min-width:0; min-height:var(--tap); padding:0 4px; display:inline-flex; align-items:center; }
@@ -158,8 +158,8 @@
     #btnSettings { display:none; }
   }
   @media (min-width: 1100px) {
-    :root { --sl:280px; --sr:360px; }
-    #side { transform:none; top:var(--hh); width:280px; background:var(--side); z-index:8; transition:none; }
+    :root { --sl:310px; --sr:360px; }
+    #side { transform:none; top:var(--hh); width:310px; background:var(--side); z-index:8; transition:none; }
     #sdim, #tools, #side .narrow { display:none !important; }
     html.noside { --sl:0px; } html.noside #side { display:none; }
     html.nodet { --sr:0px; } html.nodet #det { display:none !important; }
@@ -200,9 +200,9 @@
   .node .stks { display:flex; flex-wrap:wrap; gap:4px; margin-top:6px; }
   .node .stks .st { display:inline-flex; align-items:center; gap:4px; font-size:12px; line-height:1; padding:3px 6px 3px 4px; border:.5px solid var(--line); border-radius:4px; background:var(--page); cursor:pointer; }
   .node .stks .st i { width:4px; height:11px; border-radius:1px; display:block; }
-  #side .grp .delb { border:0; min-width:30px; min-height:var(--tap); padding:0; display:inline-flex; align-items:center; justify-content:center; color:var(--line); }
+  #side .grp .delb { border:0; min-width:28px; min-height:var(--tap); padding:0; display:inline-flex; align-items:center; justify-content:center; color:var(--line); }
   #side .grp .delb:hover, #side .grp .delb:focus-visible { color:var(--danger); }
-  #side .grp .tagb { border:0; min-width:30px; min-height:var(--tap); padding:0; display:inline-flex; align-items:center; justify-content:center; color:var(--line); }
+  #side .grp .tagb { border:0; min-width:28px; min-height:var(--tap); padding:0; display:inline-flex; align-items:center; justify-content:center; color:var(--line); }
   #side .grp .tagb[aria-pressed="true"] { color:var(--fg); }
   #edges path.edge.sel { stroke:var(--select); stroke-width:2; }
   #edges path.edge.crossing { stroke:var(--warn); stroke-width:2.5; }
