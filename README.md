@@ -69,6 +69,10 @@ group keeps its place. The details of a node list its links with a short vertica
 colour of the linked node's group. The heading of the details is the node itself: its group
 as a vertical bar (click: another group) and its name (click: edit).
 
+The bin beside a group deletes it: a group without nodes goes at once; with nodes, a menu
+asks which group they get instead (or no group), or deletes them as well. Undo takes it
+back.
+
 The tag symbol beside a group shows it as stickers: its nodes leave the canvas and appear
 as small labels on the nodes linked to them. Some groups are attributes rather than
 things; the map still describes everything with nodes and links.
