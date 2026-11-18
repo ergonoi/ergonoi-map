@@ -38,14 +38,16 @@ and the details come up as a sheet from below; on phones Map and Text are at the
 
 ## Working on the map
 
-- A click on a node selects it and makes its name editable at once (on touch screens the
-  name is edited in the details). A double click on a node makes a new node linked to it,
+- A click in the middle of a node selects it and makes its name editable at once; a click
+  near its edge only selects it (on touch screens the name is edited in the details). A double click on a node makes a new node linked to it,
   in the same group, on a free place beside it.
 - Links: a click on a link sets its label, the arrow (none, either direction, both ends)
   and a solid or dashed line. Labels sit horizontally beside the line where they cover no
   node and no other label.
-- The pin on a node means placed by hand: layouts leave it. It appears when a node is
-  dragged, and faintly on the selected node; a click on it pins or releases.
+- The pin on a node keeps it in place: Untangle leaves it where it is. Pins are set and
+  released only on purpose, with a click on the pin of the selected node (faint while
+  unpinned) or *Keep in place* in its details; moving a node does not pin it. *Unpin all*
+  in the left column releases every pin.
 - *Untangle* lays the map out with as few crossing links and as short links as it can, as
   compact as it stays readable. Per connected part and from several roots: a radial tree
   (which as such has no crossings), the order of the children chosen recursively from the
@@ -53,8 +55,8 @@ and the details come up as a sheet from below; on phones Map and Text are at the
   that moves or swaps nodes pass after pass until a pass changes nothing, no crossing is
   left or about three seconds are up, and a compaction that pulls nodes together as far as
   that adds no crossing and no overlap. The parts are packed side by side, nodes without
-  links below. Untangle moves every node and releases the pins; *Arrange → Untangle around
-  the … placed by hand* keeps them and improves only the rest. *Loosen* gives more room in
+  links below. Pinned nodes stay where they are and Untangle improves the rest from
+  where it is; *Arrange → Untangle everything, pinned nodes too* lays out all of it. *Loosen* gives more room in
   steps, *Compact* closes the gaps again.
 - *Unconnected nodes* (left column) lets the nodes without links stand out and the others
   step back.
