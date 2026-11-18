@@ -4,6 +4,8 @@
 
 *An open mind map: https://ergonoi.github.io/ergonoi-map/*
 
+Author: Markus Schatzl
+
 A mind map in a single HTML file: nodes in groups, links with or without direction, a note
 for every node. It runs in the browser without a server and without loading anything from
 the network.
