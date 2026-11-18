@@ -12,7 +12,8 @@ The layout follows the interface concept of οὐθείς Agenda: a header with 
 of rows in the columns, choices in menus rather than in bars over the content.
 
 - **Header:** the map's name (a click opens the map menu: name, groups, file, versions,
-  print), whether it is kept, *Map* and *Text*, *+ Node*, the details column, help.
+  print), whether it is kept, *Map* and *Text*, *+ Node*, the details column, search,
+  settings and help.
 - **Left column:** groups, *Arrange*, *File*.
 - **Right column:** the chosen node.
 - **Canvas:** *Fit* bottom right, always; *Arrange* there too when the left column is
@@ -112,6 +113,22 @@ the dialog shows the size the text of the nodes will have and recommends the sma
 on which it keeps at least 12 pt. The map prints as it is shown: hidden groups stay hidden,
 group areas print when they are on; name and date stand at the top.
 
+## Search
+
+The magnifier (or `/`) turns the header into a search field. It matches the names of
+nodes and stickers, upper and lower case and accents ignored. Matches get an amber ring,
+everything else steps back; the count says which match is shown ("2 of 7") and how many
+more lie in hidden groups. Enter or ↓ goes to the next match, Shift+Enter or ↑ to the
+previous one: it is selected and moved into view, on computers with its details on the
+right. Escape or the arrow on the left closes the search.
+
+## ergonoi theme
+
+*Settings and help → Display → ergonoi theme* (per browser) shows the product as
+*ergonoi Map*: a light Wisteria header and grey buttons as in outheis-agenda, the word
+*ergonoi* set as on ergonoi.com in Mona Sans Mono Bold, *Map* in Inter as before. Maps and
+storage are the same under both names.
+
 ## Building
 
 `src/map.src.html` is the source; `python3 build.py` embeds the fonts and writes
@@ -120,4 +137,5 @@ source (CSS) and in the `BRAND` object (script).
 
 ## Fonts
 
-Inter, IBM Plex Sans and IBM Plex Mono, under the SIL Open Font License (`fonts/`).
+Inter, IBM Plex Sans, IBM Plex Mono and Mona Sans Mono Bold (Latin subset, for the ergonoi
+wordmark), all under the SIL Open Font License (`fonts/`).
