@@ -891,6 +891,10 @@
   function groupColorMenu(c, anchor) {
     const free = freeColors();
     openPop(groupName(c) || "Group", () => {
+      const st = !!(state.stickers && state.stickers[c]);
+      opt(st ? "Show as nodes again" : "Show as stickers on the linked nodes", () => { closePop(); toggleStickers(c); });
+      opt("Delete the group …", () => { deleteGroup(c, anchor); }, "danger");
+      sep();
       lbl("Colour");
       for (const f of free) opt(f, () => { closePop(); recolorGroup(c, f); }, "", `<span class="ln" style="width:24px;height:3px;background:${esc(f)}"></span>${esc(BRAND.colorNames[f] || f.toUpperCase())}`);
       if (free.length) sep();
@@ -900,10 +904,6 @@
       pick.addEventListener("change", () => { closePop(); recolorGroup(c, pick.value.toUpperCase()); });
       pop.appendChild(pick);
       opt("Other colour …", () => pick.click());
-      sep();
-      const st = !!(state.stickers && state.stickers[c]);
-      opt(st ? "Show as nodes again" : "Show as stickers on the linked nodes", () => { closePop(); toggleStickers(c); });
-      opt("Delete the group …", () => { deleteGroup(c, anchor); }, "danger");
     }, anchor);
   }
   function fitHeader() { document.documentElement.style.setProperty("--hh", document.querySelector("header").offsetHeight + "px"); }
