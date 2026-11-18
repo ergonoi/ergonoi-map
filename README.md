@@ -8,6 +8,12 @@ Open it at https://outheis-labs.github.io/outheis-map/ and, if you like, install
 app from there (see *Install as an app*). Or download `dist/outheis-map.html` and open the
 file; it works the same.
 
+## First visit
+
+An empty map shows what the app is and where the map is kept, and four ways to begin:
+a first node, groups in the List view, the example, or a saved file. On the site it also
+says how to install it as an app (not when it already runs as one).
+
 ## Layout
 
 The layout follows the interface concept of οὐθείς Agenda: a header with one task, lists

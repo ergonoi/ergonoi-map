@@ -5,8 +5,8 @@
   site/                  the same page as index.html with manifest, service worker and
                          icons, installable as an app (GitHub Pages, see README)
 
-brand.json sets the default theme (outheis or ergonoi) and the name, colour and icons of
-the installed app; a choice in Settings still wins per browser. Edit the sources, never
+brand.json sets the default theme (outheis or ergonoi), the name, colour and icons of the
+installed app and the link preview, and the site's address (for the preview); a choice in Settings still wins per browser. Edit the sources, never
 the output.
 
 Usage: python3 build.py
@@ -30,7 +30,16 @@ def render(pwa):
     head = ('<link rel="manifest" href="manifest.webmanifest">\n'
             '<link rel="icon" type="image/png" sizes="32x32" href="icon-32.png">\n'
             '<link rel="apple-touch-icon" href="icon-180.png">\n'
-            '<meta name="apple-mobile-web-app-capable" content="yes">') if pwa else ""
+            '<meta name="apple-mobile-web-app-capable" content="yes">\n'
+            # link preview in messengers and elsewhere: absolute addresses, from brand.json
+            f'<meta property="og:type" content="website">\n'
+            f'<meta property="og:title" content="{look["name"]}">\n'
+            '<meta property="og:description" content="An open mind map, lightweight and confidential by design.">\n'
+            f'<meta property="og:url" content="{brand["site"]}">\n'
+            f'<meta property="og:image" content="{brand["site"]}og-image.png">\n'
+            '<meta property="og:image:width" content="1200">\n<meta property="og:image:height" content="630">\n'
+            f'<meta property="og:image:alt" content="{look["name"]}">\n'
+            '<meta name="twitter:card" content="summary_large_image">') if pwa else ""
     marks = {"BRAND_NAME": look["name"], "BRAND_TITLE": look["name"], "THEME_COLOR": look["color"],
              "DEFAULT_THEME": theme, "VERSION": version, "PWA": "true" if pwa else "false", "PWA_HEAD": head}
     out = src
@@ -55,6 +64,7 @@ page = render(True)
 (site / "index.html").write_text(page, encoding="utf-8")
 for size in (32, 180, 192, 512):
     shutil.copy(here / "icons" / f"{theme}-{size}.png", site / f"icon-{size}.png")
+shutil.copy(here / "icons" / f"{theme}-og.png", site / "og-image.png")
 manifest = {
     "name": look["name"], "short_name": look.get("short", look["name"]), "start_url": "./", "scope": "./",
     "display": "standalone", "background_color": "#FFFFFF", "theme_color": look["color"],

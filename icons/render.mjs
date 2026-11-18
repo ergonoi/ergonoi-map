@@ -1,4 +1,5 @@
-// Renders the app icons from icons/src/icon.html into icons/<theme>-<size>.png, for both
+// Renders the app icons from icons/src/icon.html into icons/<theme>-<size>.png and the link
+// preview from icons/src/og.html into icons/<theme>-og.png, for both
 // themes in brand.json. Needs Chrome and puppeteer-core (from test/: npm install there).
 // Usage: node icons/render.mjs
 import { readFileSync } from "node:fs";
@@ -17,5 +18,13 @@ for (const t of themes) for (const s of [32, 180, 192, 512]) {
   await p.evaluate(() => document.fonts.ready);
   await (await p.$("#icon")).screenshot({ path: join(here, `${t}-${s}.png`) });
   console.log(`icons/${t}-${s}.png`);
+}
+// the link preview, 1200 x 630
+for (const t of themes) {
+  await p.setViewport({ width: 1200, height: 630 });
+  await p.goto(`file://${join(here, "src", "og.html")}?t=${t}`);
+  await p.evaluate(() => document.fonts.ready);
+  await p.screenshot({ path: join(here, `${t}-og.png`) });
+  console.log(`icons/${t}-og.png`);
 }
 await b.close();
