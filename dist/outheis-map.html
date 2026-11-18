@@ -663,7 +663,7 @@
       ${FILE.handle ? `<button type="button" class="mrow" data-f="disc">Disconnect the file</button>` : ""}
       <button type="button" class="mrow" data-f="ver">${ICO.ver}Versions<span class="r">${versionCount || ""}</span></button>
       <button type="button" class="mrow" data-f="imp">${ICO.imp}Import Markmap …</button>
-      <div class="narrow"><div class="sepl"></div><button type="button" class="mrow" data-f="set">${ICO.set}Settings</button><p class="hint">Version 0.4.4</p></div>`;
+      <div class="narrow"><div class="sepl"></div><button type="button" class="mrow" data-f="set">${ICO.set}Settings</button><p class="hint">Version 0.4.5</p></div>`;
     box.innerHTML = h;
   }
   let gPress = null, gPressAt = 0, gPressKey = "";
@@ -1371,7 +1371,8 @@
         return n;
       };
       const allCross = P => { let n = 0; for (let i = 0; i < ce.length; i++) for (let j = i + 1; j < ce.length; j++) { const e = ce[i], f = ce[j]; if (e.from === f.from || e.from === f.to || e.to === f.from || e.to === f.to) continue; if (cross(P.get(e.from), P.get(e.to), P.get(f.from), P.get(f.to))) n++; } return n; };
-      const lenOf = (P, list) => list.reduce((s, e) => s + Math.hypot(P.get(e.from).x - P.get(e.to).x, P.get(e.from).y - P.get(e.to).y), 0);
+      // length cost: squared in units of L, so that one long link weighs more than several short ones
+      const lenOf = (P, list) => list.reduce((s, e) => { const d = Math.hypot(P.get(e.from).x - P.get(e.to).x, P.get(e.from).y - P.get(e.to).y) / L; return s + d * d; }, 0) * L;
       const score = P => allCross(P) * 1000 + lenOf(P, ce) / L;
       const overlaps = (P, v, p) => ids.some(w => w !== v && Math.abs(P.get(w).x - p.x) < (sz.get(w).w + sz.get(v).w) / 2 + 14 && Math.abs(P.get(w).y - p.y) < (sz.get(w).h + sz.get(v).h) / 2 + 10);
 
@@ -1383,7 +1384,9 @@
             const a = P.get(ids[i]), b = P.get(ids[j]);
             let dx = a.x - b.x, dy = a.y - b.y; const d = Math.hypot(dx, dy) || 0.1;
             const room = (sz.get(ids[i]).w + sz.get(ids[j]).w) / 2 + 18 * spacing();
-            const f = (L * L) / d * 0.6 + (d < room ? (room - d) * 4 : 0);
+            // repulsion only in the neighbourhood: a global one pushes thin branches and chains
+            // far away from a dense part (the long straight runs after Loosen)
+            const f = (d < 2.5 * L ? (L * L) / d * 0.6 * (1 - d / (2.5 * L)) : 0) + (d < room ? (room - d) * 4 : 0);
             dx /= d; dy /= d;
             F.get(ids[i]).x += dx * f; F.get(ids[i]).y += dy * f; F.get(ids[j]).x -= dx * f; F.get(ids[j]).y -= dy * f;
           }
@@ -1431,6 +1434,25 @@
           for (const k of ks) if (kids.get(k).length && !timeUp()) optimise(k);
         };
         optimise(root);
+        // With pinned nodes, the drawing is turned, mirrored and moved so that it fits the
+        // pinned ones best (least squares), then they are set to where they are.
+        const pins = ids.filter(fixed);
+        if (pins.length) {
+          const tgt = v => ({ x: nodeById(v).x, y: nodeById(v).y });
+          let best = null;
+          for (const mirror of [1, -1]) {
+            const src = pins.map(v => ({ x: P.get(v).x * mirror, y: P.get(v).y })), dst = pins.map(tgt);
+            const sc = src.reduce((a, q) => ({ x: a.x + q.x / pins.length, y: a.y + q.y / pins.length }), { x: 0, y: 0 });
+            const dc = dst.reduce((a, q) => ({ x: a.x + q.x / pins.length, y: a.y + q.y / pins.length }), { x: 0, y: 0 });
+            let num = 0, den = 0;
+            src.forEach((q, i) => { const a = { x: q.x - sc.x, y: q.y - sc.y }, b = { x: dst[i].x - dc.x, y: dst[i].y - dc.y }; num += a.x * b.y - a.y * b.x; den += a.x * b.x + a.y * b.y; });
+            const th = pins.length > 1 ? Math.atan2(num, den) : 0, co = Math.cos(th), si = Math.sin(th);
+            const map = q => { const x = q.x * mirror - sc.x, y = q.y - sc.y; return { x: dc.x + x * co - y * si, y: dc.y + x * si + y * co }; };
+            const err = pins.reduce((e, v, i) => { const m = map(P.get(v)); return e + Math.hypot(m.x - dst[i].x, m.y - dst[i].y); }, 0);
+            if (!best || err < best.err) best = { err, map };
+          }
+          for (const v of ids) P.set(v, fixed(v) ? tgt(v) : best.map(P.get(v)));
+        }
         relax(P, 220);
         return P;
       };
@@ -1485,8 +1507,25 @@
       };
       let P;
       if (keepPinned) {
-        P = new Map(ids.map(v => [v, { x: nodeById(v).x, y: nodeById(v).y }]));
+        // Around pinned nodes the same search runs: from the present layout and from every
+        // root, each fitted to the pinned nodes; the best one wins. A part without pins keeps
+        // its place in the map.
+        const cur = new Map(ids.map(v => [v, { x: nodeById(v).x, y: nodeById(v).y }]));
+        P = new Map([...cur].map(([k, v]) => [k, { ...v }]));
         relax(P, 160); search(P); tighten(P);
+        let bestS = score(P);
+        const roots = c.includes(state.radialCenter) ? [state.radialCenter] : c.slice().sort((a, b) => adj.get(b).length - adj.get(a).length).slice(0, 4);
+        for (const root of roots) {
+          if (timeUp()) break;
+          const Q = runFrom(root); search(Q); tighten(Q);
+          if (!ids.some(fixed)) {
+            const qc = ids.reduce((a, v) => ({ x: a.x + Q.get(v).x / ids.length, y: a.y + Q.get(v).y / ids.length }), { x: 0, y: 0 });
+            const cc = ids.reduce((a, v) => ({ x: a.x + cur.get(v).x / ids.length, y: a.y + cur.get(v).y / ids.length }), { x: 0, y: 0 });
+            for (const v of ids) { const q = Q.get(v); Q.set(v, { x: q.x - qc.x + cc.x, y: q.y - qc.y + cc.y }); }
+          }
+          const sQ = score(Q);
+          if (sQ < bestS) { bestS = sQ; P = Q; }
+        }
       } else {
         const roots = c.includes(state.radialCenter) ? [state.radialCenter] : c.slice().sort((a, b) => adj.get(b).length - adj.get(a).length).slice(0, 4);
         let bestS = Infinity;
@@ -1539,12 +1578,12 @@
     if (keepPinned === undefined) keepPinned = state.nodes.some(n => n.pinned);
     crossing.clear();
     const targets = layoutUntangle(!!keepPinned);
-    if (!targets.size) { notice("Nothing to move: every node is pinned."); return; }
+    if (!targets.size) { notice("Nothing to move: every node is pinned. Unpin all (left column) frees them."); return; }
     checkpoint(typeof label === "string" ? "Loosened" : "Untangled");
     animateTo(targets, () => {
       resolveCollisions(state.nodes, 24); drawNodes(); drawEdges(); save(); fitView();
       const n = countCrossings();
-      notice((typeof label === "string" ? label + ". " : "") + (n ? n + (n === 1 ? " crossing left." : " crossings left.") + (keepPinned ? " Pinned nodes stayed where they are." : "") : "No crossing links."), true);
+      notice((typeof label === "string" ? label + ". " : "") + (n ? n + (n === 1 ? " crossing left." : " crossings left.") + (keepPinned ? " " + state.nodes.filter(m => m.pinned).length + " pinned nodes stayed where they are; Unpin all frees them." : "") : "No crossing links."), true);
     });
   }
   function countCrossings() {
@@ -1584,7 +1623,7 @@
     } else if (kind === "hierarchy") targets = layoutHierarchy();
     else if (kind === "radial") targets = layoutRadial();
     else if (kind === "cluster") targets = layoutCluster();
-    if (!targets.size) { notice("Nothing to move: every node is pinned."); return; }
+    if (!targets.size) { notice("Nothing to move: every node is pinned. Unpin all (left column) frees them."); return; }
     checkpoint("Layout");
     animateTo(targets, () => { resolveCollisions(state.nodes, 24); drawNodes(); drawEdges(); save(); fitView(); });
   }
