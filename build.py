@@ -41,7 +41,7 @@ def render(pwa):
             f'<meta property="og:image:alt" content="{look["name"]}">\n'
             '<meta name="twitter:card" content="summary_large_image">') if pwa else ""
     marks = {"BRAND_NAME": look["name"], "BRAND_TITLE": look["name"], "THEME_COLOR": look["color"],
-             "DEFAULT_THEME": theme, "VERSION": version, "PWA": "true" if pwa else "false", "PWA_HEAD": head}
+             "DEFAULT_THEME": theme, "VERSION": version, "REPO_URL": brand["repo"], "PWA": "true" if pwa else "false", "PWA_HEAD": head}
     out = src
     for k, v in marks.items():
         out = out.replace("@@" + k + "@@", v)

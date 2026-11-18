@@ -310,6 +310,8 @@
   /* one line, bold, still within an iPhone 16e (390 px less the margins) */
   #empty .motto .one { display:block; white-space:nowrap; font-weight:600; color:var(--fg); font-size:min(14px, calc((100vw - 40px) / 25.5)); }
   html.ergonoi #emptyProj { display:none; }
+  .about p { margin:0 0 8px; font-size:15px; } .about .am { font-weight:600; } .about .al { display:flex; flex-wrap:wrap; gap:6px 18px; } .about .al a { display:inline-flex; align-items:center; gap:4px; color:var(--fg2); } .about .am .one { display:block; white-space:nowrap; font-size:min(14px, calc((100vw - 72px) / 25.5)); }
+  html.ergonoi .about .aproj { display:none; }
   html.isempty #tools { display:none; }
   #versions .vrow { display:flex; align-items:center; gap:10px; min-height:var(--tap); border-bottom:.5px solid var(--line); font-size:14px; }
   #versions .vrow span { flex:1; }
@@ -546,7 +548,12 @@
   </ul>
   <h3>More</h3>
   <div class="btnrow"><button class="ghost" id="setDemo">Load the example</button><button class="ghost" id="setJsonImport">Restore an old backup (.json)</button></div>
-  <p class="hint">Version 0.9.4 · <a href="https://github.com/outheis-labs/outheis-map" target="_blank" rel="noopener">outheis-map</a></p>
+  <h3>About</h3>
+  <div class="about">
+    <p><strong><span class="brand">ergonoi Map</span></strong> · version 0.9.5</p>
+    <p class="am"><span class="aproj">οὐθείς Map is an <b>ergonoi</b> project: </span><span class="one">Technology is potential. Accessibility makes it matter.</span></p>
+    <p class="al"><a href="https://github.com/ergonoi/ergonoi-map#readme" target="_blank" rel="noopener">Documentation <svg width="8" height="8" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M1 9L9 1M9 1H3M9 1V7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></a><a href="https://github.com/ergonoi/ergonoi-map" target="_blank" rel="noopener">Source code on GitHub <svg width="8" height="8" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M1 9L9 1M9 1H3M9 1V7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></a><a href="https://ergonoi.com" target="_blank" rel="noopener">ergonoi.com <svg width="8" height="8" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M1 9L9 1M9 1H3M9 1V7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></a></p>
+  </div>
   <input type="file" id="mdInput" accept=".md,.markdown" class="hidden">
   <input type="file" id="txtInput" accept=".txt,text/plain" class="hidden">
   <input type="file" id="jsonInput" accept=".json" class="hidden">
@@ -946,7 +953,7 @@
       <button type="button" class="mrow" data-f="ver">${ICO.ver}Versions<span class="r">${versionCount || ""}</span></button>
       <button type="button" class="mrow" data-f="imp">${ICO.imp}Markmap …<span class="r">import, export</span></button>
       <button type="button" class="mrow" data-f="print">${ICO.print}Print or PDF …<span class="r">A4–A0</span></button>
-      <div class="narrow"><div class="sepl"></div><button type="button" class="mrow" data-f="set">${ICO.set}Help</button><p class="hint">Version 0.9.4</p></div>`;
+      <div class="narrow"><div class="sepl"></div><button type="button" class="mrow" data-f="set">${ICO.set}Help</button><p class="hint">Version 0.9.5</p></div>`;
     box.innerHTML = h;
   }
   let gPress = null, gPressAt = 0, gPressKey = "";

@@ -1,6 +1,7 @@
 {
   "default": "ergonoi",
   "site": "https://ergonoi.github.io/ergonoi-map/",
+  "repo": "https://github.com/ergonoi/ergonoi-map",
   "themes": {
     "outheis": { "name": "οὐθείς Map", "color": "#97EAD2" },
     "ergonoi": { "name": "ergonoi Map", "color": "#E2C8E8" }
