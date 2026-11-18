@@ -103,12 +103,23 @@
   #side .mrow .r { margin-left:auto; color:var(--muted); font-size:14px; max-width:50%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   #side .sepl { border-top:.5px solid var(--line); margin:10px 0; }
   #side .hint { font-size:13px; color:var(--muted); padding:4px 20px; margin:0; }
+  #side .tog { display:flex; align-items:center; gap:10px; width:calc(100% - 32px); margin:2px 16px; min-height:40px; padding:0 12px; font-size:15px; text-align:left; }
+  #side .tog[aria-pressed="true"] { background:var(--fg); color:var(--page); border-color:var(--fg); }
+  #side .tog .n { margin-left:auto; font-size:12px; opacity:.7; }
+  #pop .seg { display:flex; gap:6px; padding:6px 16px 10px; flex-wrap:wrap; }
+  #pop .seg button { min-height:36px; min-width:44px; padding:0 10px; font-size:15px; }
+  #pop .seg button[aria-pressed="true"] { background:var(--fg); color:var(--page); border-color:var(--fg); }
   /* Detail of the chosen node */
   #det { position:fixed; z-index:16; left:0; right:0; bottom:0; max-height:62vh; overflow-y:auto; background:var(--page); border-radius:16px 16px 0 0; box-shadow:0 -8px 30px rgba(0,0,0,.16); padding:8px 0 calc(20px + env(safe-area-inset-bottom)); }
   #det .grab { width:40px; height:5px; border-radius:3px; background:var(--line); margin:0 auto 6px; }
   #det .dh { display:flex; align-items:flex-start; gap:8px; padding:6px 12px 10px 20px; border-bottom:.5px solid var(--line); }
   #det .dh .tw { flex:1; min-width:0; }
-  #det .dh input { width:100%; font:600 20px var(--font-head); border:0; border-bottom:.5px solid transparent; background:transparent; color:var(--fg); outline:none; padding:2px 0; }
+  #det .cap { font-size:11px; letter-spacing:1.2px; text-transform:uppercase; color:var(--muted); margin-bottom:2px; }
+  #det .hrow { display:flex; align-items:center; gap:10px; }
+  #det .hrow .stk { border:0; min-width:0; min-height:var(--tap); padding:0 4px 0 0; display:inline-flex; align-items:center; background:transparent; }
+  #det .hrow .stk i { display:block; width:6px; height:22px; border-radius:1px; }
+  #det .dh input { width:100%; font:600 20px var(--font-head); border:0; border-bottom:.5px solid transparent; background:transparent; color:var(--fg); outline:none; padding:2px 0; cursor:text; }
+  #det .dh input:hover { border-bottom-color:var(--line); }
   #det .dh input:focus { border-bottom-color:var(--fg); }
   #det .dh .sub { color:var(--muted); font-size:14px; }
   #det .dh .x { border:0; min-width:var(--tap); font-size:22px; color:var(--fg2); }
@@ -178,6 +189,19 @@
   #edges path.edge { stroke:var(--line); stroke-width:1.5; fill:none; }
   #edges path.hit { stroke:transparent; stroke-width:18; fill:none; cursor:pointer; }
   #edges path.edge.directed { marker-end:url(#arrow); }
+  #edges path.edge.both { marker-start:url(#arrow); marker-end:url(#arrow); }
+  #edges path.edge.dashed { stroke-dasharray:6 5; }
+  /* Edge labels: horizontal, on a white halo, placed where they hit no node and no other label. */
+  #edges text.elabel { font:13px var(--font-text); fill:var(--fg2); paint-order:stroke; stroke:var(--page); stroke-width:5px; stroke-linejoin:round; cursor:pointer; }
+  #edges text.elabel.gone { display:none; }
+  /* Unconnected: the nodes without links stand out, the rest steps back. */
+  .node.bg, #edges .bg { opacity:.2; }
+  .node.stk { display:none; }
+  .node .stks { display:flex; flex-wrap:wrap; gap:4px; margin-top:6px; }
+  .node .stks .st { display:inline-flex; align-items:center; gap:4px; font-size:12px; line-height:1; padding:3px 6px 3px 4px; border:.5px solid var(--line); border-radius:4px; background:var(--page); cursor:pointer; }
+  .node .stks .st i { width:4px; height:11px; border-radius:1px; display:block; }
+  #side .grp .tagb { border:0; min-width:36px; min-height:var(--tap); padding:0; display:inline-flex; align-items:center; justify-content:center; color:var(--line); }
+  #side .grp .tagb[aria-pressed="true"] { color:var(--fg); }
   #edges path.edge.sel { stroke:var(--select); stroke-width:2; }
   #edges path.edge.crossing { stroke:var(--warn); stroke-width:2.5; }
   #tempEdge { stroke:var(--select); stroke-width:1.5; stroke-dasharray:6 5; fill:none; pointer-events:none; }
@@ -197,7 +221,11 @@
   .node .lh svg { width:14px; height:14px; }
   .node.dim { opacity:var(--off); }
   .node.target { box-shadow:0 0 0 2px var(--ok); }
-  .node .pin { position:absolute; top:-9px; left:-9px; width:16px; height:16px; color:var(--fg2); background:var(--page); border-radius:50%; }
+  /* The pin: placed by hand, layouts leave the node. Shown when pinned, and faint on the
+     selected node; a click on it pins or releases. */
+  .node .pin { position:absolute; top:-10px; left:-10px; width:20px; height:20px; padding:2px; color:var(--fg2); background:var(--page); border-radius:50%; cursor:pointer; }
+  .node .pin.off { color:var(--line); }
+  .node .pin::after { content:""; position:absolute; inset:-10px; }
   .node input { font:inherit; width:150px; border:0; border-bottom:1px solid var(--fg); outline:none; background:transparent; padding:0; }
 
   /* Popover (sheet on narrow screens), as in the agenda */
@@ -264,12 +292,12 @@
 <div id="viewport">
   <div id="world">
     <svg id="edges" width="10000" height="8000">
-      <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#B8B4B4"/></marker></defs>
+      <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#7A7676"/></marker></defs>
     </svg>
   </div>
 </div>
 <div id="textView" class="hidden">
-  <div class="tbar"><span class="hint">One line per node: text, {{note}}, #id-…, #group-…, then #id-… #link-plain / #link-to / #link-from for each link, #at-x,y, #pinned.</span><button class="sec" id="textCopy">Copy all</button><button class="primary" id="textApply">Apply</button></div>
+  <div class="tbar"><span class="hint">One line per node: text, {{note}}, #id-…, #group-…, then for each link #id-… #link-plain / -to / -from / -both, optionally #dashed and #label-"…", then #at-x,y, #pinned.</span><button class="sec" id="textCopy">Copy all</button><button class="primary" id="textApply">Apply</button></div>
   <div class="tmsg hidden" id="textMsg"></div>
   <textarea id="mapText" spellcheck="false" autocapitalize="none" autocomplete="off" autocorrect="off" aria-label="The map as text"></textarea>
 </div>
@@ -353,7 +381,7 @@
   const ICON_LINK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h12M13 7l5 5-5 5"/></svg>';
   const ICON_PIN = '<svg class="pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M9 4h6l-1 6 3 3H7l3-3z"/><path d="M12 13v7"/></svg>';
 
-  let state = { nodes: [], edges: [], counter: 1, legend: {} };
+  let state = { nodes: [], edges: [], counter: 1, legend: {}, stickers: {} };
   const sel = new Set();
   let selEdge = null, crossing = new Set();
   let linking = null; // node id while "Connect" waits for a target
@@ -361,6 +389,11 @@
   const uid = () => "n" + (state.counter++);
   const nodeById = id => state.nodes.find(n => n.id === id);
   const edgesOf = id => state.edges.filter(e => e.from === id || e.to === id);
+  // A group shown as stickers: its nodes are not drawn on the canvas; each node linked to one
+  // of them carries its name as a sticker. Nodes and links stay what they are.
+  const isSticker = n => !!(n && state.stickers && state.stickers[n.color]);
+  const stickersOf = n => edgesOf(n.id).map(e => nodeById(e.from === n.id ? e.to : e.from)).filter(isSticker);
+  const linksShown = id => edgesOf(id).filter(e => !isSticker(nodeById(e.from)) && !isSticker(nodeById(e.to)));
 
   // ---------- Storage and undo ----------
   const APP_VERSION = 4; // the stored format; unchanged from the first version
@@ -402,6 +435,7 @@
       d.edges = (d.edges || []).filter(e => e && e.from !== e.to && ids.has(e.from) && ids.has(e.to));
       if (!isFinite(d.counter)) d.counter = d.nodes.length + 1;
       if (!d.legend || typeof d.legend !== "object") d.legend = {};
+      if (!d.stickers || typeof d.stickers !== "object") d.stickers = {};
       state = d; return "ok";
     } catch (err) {
       try { localStorage.setItem(BRAND.storageKey + ".unreadable-" + Date.now(), raw); } catch (e) { /* storage full */ }
@@ -433,7 +467,7 @@
 
   // ---------- Example (neutral content) ----------
   function demo() {
-    state = { nodes: [], edges: [], counter: 1, legend: {} };
+    state = { nodes: [], edges: [], counter: 1, legend: {}, stickers: {} };
     const BL = "#D64090", TE = "#3F9E4D", AB = "#F97316", WI = "#B39DDB";
     state.legend = { [BL]: "Goal", [TE]: "Places", [AB]: "Things to do", [WI]: "Open questions" };
     const add = (t, c, p) => { const n = { id: uid(), title: t, color: c, x: CX + (Math.random() - .5) * 900, y: CY + (Math.random() - .5) * 700, pinned: false }; state.nodes.push(n); if (p) state.edges.push({ id: uid(), from: p.id, to: n.id, directed: false }); return n; };
@@ -444,13 +478,24 @@
     for (const t of ["How many nights?", "Who brings the stove?"]) add(t, WI, open);
     undoStack.length = 0; sel.clear();
     save(); rebuild();
-    setTimeout(() => runLayout("radial"), 60);
+    setTimeout(untangle, 60);
   }
 
   // ---------- Rendering ----------
   const nodeEls = new Map(), edgeEls = new Map();
   const sizeOf = n => { const el = nodeEls.get(n.id); return el ? { w: el.offsetWidth, h: el.offsetHeight } : { w: 90, h: 40 }; };
-  function edgePath(e) { const a = nodeById(e.from), b = nodeById(e.to); return a && b ? `M ${a.x} ${a.y} L ${b.x} ${b.y}` : ""; }
+  // A link runs from border to border of its nodes, so that arrow heads are visible.
+  function edgePath(e) {
+    const a = nodeById(e.from), b = nodeById(e.to); if (!a || !b) return "";
+    const clip = (n, toward, pad) => {
+      const z = sizeOf(n), dx = toward.x - n.x, dy = toward.y - n.y;
+      if (!dx && !dy) return { x: n.x, y: n.y };
+      const t = Math.min(dx ? (z.w / 2 + pad) / Math.abs(dx) : Infinity, dy ? (z.h / 2 + pad) / Math.abs(dy) : Infinity, 1);
+      return { x: n.x + dx * t, y: n.y + dy * t };
+    };
+    const p = clip(a, b, e.both ? 3 : 1), q = clip(b, a, e.directed ? 3 : 1);
+    return `M ${p.x} ${p.y} L ${q.x} ${q.y}`;
+  }
   function drawEdges() {
     for (const e of state.edges) {
       let g = edgeEls.get(e.id);
@@ -463,23 +508,69 @@
       }
       const d = edgePath(e);
       g.hit.setAttribute("d", d); g.line.setAttribute("d", d);
-      g.line.classList.toggle("directed", !!e.directed);
+      g.line.classList.toggle("directed", !!e.directed && !e.both);
+      g.line.classList.toggle("both", !!e.both);
+      g.line.classList.toggle("dashed", !!e.dashed);
       g.line.classList.toggle("crossing", crossing.has(e.id));
       g.line.classList.toggle("sel", selEdge === e.id);
-      const gone = HIDDEN.has((nodeById(e.from) || {}).color) || HIDDEN.has((nodeById(e.to) || {}).color);
+      const gone = HIDDEN.has((nodeById(e.from) || {}).color) || HIDDEN.has((nodeById(e.to) || {}).color) || isSticker(nodeById(e.from)) || isSticker(nodeById(e.to));
       g.line.classList.toggle("gone", gone); g.hit.classList.toggle("gone", gone);
+      const bg = UNCONN;
+      g.line.classList.toggle("bg", !!bg);
+    }
+    placeLabels();
+  }
+  // Edge labels: tried at the middle of the link, then a little to either side of it and
+  // further along, until the label overlaps no node and no label placed before it.
+  const labelEls = new Map();
+  function placeLabels() {
+    for (const [id, t] of labelEls) if (!state.edges.some(e => e.id === id && e.label)) { t.remove(); labelEls.delete(id); }
+    const boxes = state.nodes.filter(n => !HIDDEN.has(n.color) && !isSticker(n)).map(n => { const z = sizeOf(n); return { x1: n.x - z.w / 2 - 4, y1: n.y - z.h / 2 - 4, x2: n.x + z.w / 2 + 4, y2: n.y + z.h / 2 + 4 }; });
+    const hit = (b, list) => list.some(o => b.x1 < o.x2 && b.x2 > o.x1 && b.y1 < o.y2 && b.y2 > o.y1);
+    const placed = [];
+    for (const e of state.edges) {
+      if (!e.label) continue;
+      let t = labelEls.get(e.id);
+      if (!t) { t = document.createElementNS(SVGNS, "text"); t.setAttribute("class", "elabel"); t.dataset.eid = e.id; edgesSvg.appendChild(t); labelEls.set(e.id, t); }
+      t.textContent = e.label;
+      const a = nodeById(e.from), b = nodeById(e.to); if (!a || !b) continue;
+      const gone = HIDDEN.has(a.color) || HIDDEN.has(b.color) || isSticker(a) || isSticker(b);
+      t.classList.toggle("gone", gone); if (gone) continue;
+      t.classList.toggle("bg", !!UNCONN);
+      const w = e.label.length * 7 + 8, h = 18;
+      const dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy) || 1, nx = -dy / len, ny = dx / len;
+      let best = null;
+      for (const f of [0.5, 0.4, 0.6, 0.3, 0.7]) {
+        for (const o of [0, 14, -14, 28, -28, 42, -42]) {
+          const cx = a.x + dx * f + nx * o, cy = a.y + dy * f + ny * o;
+          const bx = { x1: cx - w / 2, y1: cy - h / 2, x2: cx + w / 2, y2: cy + h / 2 };
+          if (!hit(bx, boxes) && !hit(bx, placed)) { best = { cx, cy, bx }; break; }
+        }
+        if (best) break;
+      }
+      if (!best) { const cx = a.x + dx / 2, cy = a.y + dy / 2; best = { cx, cy, bx: { x1: cx - w / 2, y1: cy - h / 2, x2: cx + w / 2, y2: cy + h / 2 } }; }
+      placed.push(best.bx);
+      t.setAttribute("x", best.cx); t.setAttribute("y", best.cy + 4); t.setAttribute("text-anchor", "middle");
     }
   }
   function drawNodes() {
     for (const n of state.nodes) {
       let el = nodeEls.get(n.id);
       if (!el) { el = document.createElement("div"); el.className = "node"; el.dataset.nid = n.id; world.appendChild(el); nodeEls.set(n.id, el); }
-      if (!el.querySelector("input")) el.innerHTML = esc(n.title || "…") + (n.pinned ? ICON_PIN : "") + `<span class="nd${n.note ? " has" : ""}" title="${n.note ? "Note" : "Add a note"}" role="button" aria-label="${n.note ? "Note" : "Add a note"}"></span>`
+      const showPin = n.pinned || (sel.size === 1 && sel.has(n.id));
+      if (!el.querySelector("input")) el.innerHTML = esc(n.title || "…") + (showPin ? ICON_PIN.replace('class="pin"', `class="pin${n.pinned ? "" : " off"}" role="button" aria-label="${n.pinned ? "Placed by hand; click to release" : "Click to keep in place"}"`).replace("<svg ", `<svg data-tip="${n.pinned ? "Placed by hand: layouts leave it. Click to release." : "Click to keep it in place: layouts leave it."}" `) : "") + `<span class="nd${n.note ? " has" : ""}" title="${n.note ? "Note" : "Add a note"}" role="button" aria-label="${n.note ? "Note" : "Add a note"}"></span>`
         + (sel.size === 1 && sel.has(n.id) && !linking ? `<span class="lh" title="Drag to another node to link it, or to free space for a new one" aria-label="Link">${ICON_LINK}</span>` : "");
       el.style.left = n.x + "px"; el.style.top = n.y + "px";
       el.style.setProperty("--nc", n.color);
       el.classList.toggle("sel", sel.has(n.id));
       el.classList.toggle("gone", HIDDEN.has(n.color));
+      el.classList.toggle("stk", isSticker(n));
+      if (!el.querySelector("input") && !isSticker(n)) {
+        const st = stickersOf(n).filter(m => !HIDDEN.has(m.color));
+        if (st.length) el.insertAdjacentHTML("beforeend", `<div class="stks">${st.map(m => `<span class="st" data-stk="${esc(m.id)}" title="${esc(groupName(m.color) || "")}"><i style="background:${esc(m.color)}"></i>${esc(m.title)}</span>`).join("")}</div>`);
+      }
+      el.classList.toggle("bg", UNCONN && linksShown(n.id).length > 0);
+      const pinEl = el.querySelector(".pin"); if (pinEl) { const tt = document.createElementNS(SVGNS, "title"); tt.textContent = pinEl.getAttribute("data-tip"); pinEl.appendChild(tt); }
       el.classList.toggle("target", !!linking && linking !== n.id);
     }
   }
@@ -505,6 +596,8 @@
   const HIDDEN = new Set((() => { try { return JSON.parse(localStorage.getItem(BRAND.storageKey + ".hidden") || "[]"); } catch (err) { return []; } })());
   const saveHidden = () => { try { localStorage.setItem(BRAND.storageKey + ".hidden", JSON.stringify([...HIDDEN])); } catch (err) {} };
   let sideEdit = false, sideEditing = false;
+  let UNCONN = false; // the button "Unconnected": nodes without links stand out
+  function setUnconn(on) { UNCONN = on; drawNodes(); drawEdges(); renderSide(); }
   const wide = () => matchMedia("(min-width: 1100px)").matches;
   // Desktop: the side columns can be folded away, so that the canvas takes the window.
   const COLS = { side: true, det: true };
@@ -546,16 +639,19 @@
     const cols = groupColors();
     const EYE = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2.5 12s3.5-6.5 9.5-6.5 9.5 6.5 9.5 6.5-3.5 6.5-9.5 6.5S2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.8"/></svg>';
     const EYE_OFF = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2.5 12s3.5-6.5 9.5-6.5 9.5 6.5 9.5 6.5-3.5 6.5-9.5 6.5S2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.8"/><path d="M4 20L20 4"/></svg>';
+    const TAG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3.5 12.5V4.5h8l9 9-8 8z"/><circle cx="8" cy="9" r="1.4"/></svg>';
     let h = `<h3>Groups</h3>`;
     h += cols.map(c => {
       const n = state.nodes.filter(m => m.color === c).length, name = groupName(c), off = HIDDEN.has(c), none = c === BRAND.none;
       return `<div class="grp${off ? " off" : ""}" data-g="${esc(c)}">`
         + (none ? `<span class="swb"><span class="sw" style="background:${esc(c)}"></span></span>` : `<button type="button" class="swb" data-gc="${esc(c)}" title="Change the colour" aria-label="Colour of ${esc(name || "the group")}"><span class="sw" style="background:${esc(c)}"></span></button>`)
         + (none ? `<span class="gn nameless">no group</span>` : `<input class="gn" data-gname="${esc(c)}" value="${esc(state.legend[c] || "")}" placeholder="unnamed" aria-label="Name of the group" title="Rename">`)
-        + `<span class="n">${n}</span><button type="button" class="eye" data-geye="${esc(c)}" aria-pressed="${!off}" title="${off ? "Show" : "Hide"} (press and hold: only this group)" aria-label="${off ? "Show" : "Hide"} ${esc(name || "the group")}">${off ? EYE_OFF : EYE}</button></div>`;
+        + `<span class="n">${n}</span>` + (none ? "" : `<button type="button" class="tagb" data-gtag="${esc(c)}" aria-pressed="${!!(state.stickers || {})[c]}" title="${(state.stickers || {})[c] ? "Shown as stickers on the linked nodes; click to show as nodes" : "Show as stickers on the linked nodes (an attribute rather than a group)"}" aria-label="Stickers">${TAG}</button>`) + `<button type="button" class="eye" data-geye="${esc(c)}" aria-pressed="${!off}" title="${off ? "Show" : "Hide"} (press and hold: only this group)" aria-label="${off ? "Show" : "Hide"} ${esc(name || "the group")}">${off ? EYE_OFF : EYE}</button></div>`;
     }).join("");
     h += `<button type="button" class="act" data-gadd="1">+ Add group</button>`;
-    h += `<div class="wide"><h3>Arrange</h3><div class="row2"><button type="button" data-ar="compact">Compact</button><button type="button" data-ar="overlaps">Overlaps</button><button type="button" data-ar="fit">Fit</button><button type="button" data-ar="more">More …</button></div></div>`;
+    const loose = state.nodes.filter(n => !isSticker(n) && !linksShown(n.id).length).length;
+    h += `<h3>Show</h3><button type="button" class="tog" data-unconn="1" aria-pressed="${UNCONN}" title="Nodes without any link stand out; the others step back">Unconnected nodes<span class="n">${loose}</span></button>`;
+    h += `<div class="wide"><h3>Arrange</h3><div class="row2"><button type="button" data-ar="untangle">Untangle</button><button type="button" data-ar="loosen">Loosen</button><button type="button" data-ar="compact">Compact</button><button type="button" data-ar="overlaps">Overlaps</button><button type="button" data-ar="fit">Fit</button></div></div>`;
     const fileR = FILE.handle ? esc(FILE.name) : canFile ? "" : "download";
     h += `<h3>File</h3>
       <button type="button" class="mrow" data-f="open">${ICO.open}Open …</button>
@@ -592,6 +688,17 @@
       drawNodes(); drawEdges(); renderSide(); renderDetail(); return;
     }
     if (b.dataset.gc) { groupColorMenu(b.dataset.gc, b); return; }
+    if (b.dataset.unconn) { setUnconn(!UNCONN); return; }
+    if (b.dataset.gtag) {
+      state.stickers = state.stickers || {};
+      const c = b.dataset.gtag, on = !state.stickers[c];
+      checkpoint(on ? "Shown as stickers" : "Shown as nodes");
+      if (on) state.stickers[c] = true; else delete state.stickers[c];
+      for (const id of [...sel]) if (isSticker(nodeById(id))) sel.delete(id);
+      save(); drawNodes(); drawEdges(); renderSide(); renderDetail();
+      notice((groupName(c) || "The group") + (on ? " is shown as stickers on the linked nodes." : " is shown as nodes again."), true);
+      return;
+    }
     if (b.dataset.gadd) {
       const c = freeColors()[0]; if (!c) { notice("All colours are in use; choose another colour in Edit."); return; }
       checkpoint("New group"); state.legend[c] = "New group"; save();
@@ -600,7 +707,7 @@
       return;
     }
     const ar = b.dataset.ar;
-    if (ar === "compact") compact(); else if (ar === "overlaps") checkReadability(); else if (ar === "fit") fitView(); else if (ar === "more") arrangeMenu(b);
+    if (ar === "untangle") untangle(); else if (ar === "loosen") loosen(); else if (ar === "compact") compact(); else if (ar === "overlaps") checkReadability(); else if (ar === "fit") fitView(); else if (ar === "more") arrangeMenu(b);
     const f = b.dataset.f;
     if (f === "open") (canFile ? $("fileOpen") : $("fileLoad")).click();
     else if (f === "save") { if (!FILE.handle) (canFile ? $("fileNew") : $("fileDownload")).click(); else notice("Every change is written to " + FILE.name + "."); }
@@ -698,6 +805,12 @@
     }
     const handle = ev.target.closest(".lh");
     if (handle) { const n = nodeById(handle.closest(".node").dataset.nid); closePop(); gesture = { kind: "link", from: n, start: { x: ev.clientX, y: ev.clientY }, moved: true }; showTemp(n, toWorld(ev.clientX, ev.clientY)); return; }
+    const stEl = ev.target.closest(".st[data-stk]");
+    if (stEl) { gesture = { kind: "sticker", id: stEl.dataset.stk, start: { x: ev.clientX, y: ev.clientY }, moved: false }; return; }
+    const pinEl = ev.target.closest(".pin");
+    if (pinEl) { gesture = { kind: "pin", n: nodeById(pinEl.closest(".node").dataset.nid), start: { x: ev.clientX, y: ev.clientY }, moved: false }; return; }
+    const lab = ev.target.closest("text.elabel");
+    if (lab) { gesture = { kind: "edge", eid: lab.dataset.eid, start: { x: ev.clientX, y: ev.clientY }, moved: false }; return; }
     const dot = ev.target.closest(".nd");
     if (dot) { gesture = { kind: "note", n: nodeById(dot.closest(".node").dataset.nid), start: { x: ev.clientX, y: ev.clientY }, moved: false }; return; }
     const nodeEl = ev.target.closest(".node"), hit = ev.target.closest("path.hit");
@@ -723,7 +836,7 @@
     }
     const dx = ev.clientX - g.start.x, dy = ev.clientY - g.start.y;
     if (!g.moved && Math.abs(dx) + Math.abs(dy) < 5) return;
-    if (g.kind === "note") { g.moved = true; return; }
+    if (g.kind === "note" || g.kind === "pin" || g.kind === "sticker") { g.moved = true; return; }
     if (!g.moved) { g.moved = true; closePop(); if (g.kind === "node") { checkpoint("Moved"); if (!sel.has(g.n.id)) { sel.clear(); sel.add(g.n.id); } } }
     if (g.kind === "pan") { view.x = g.v0.x + dx; view.y = g.v0.y + dy; applyView(); }
     else if (g.kind === "node") {
@@ -747,6 +860,8 @@
       return;
     }
     if (g.kind === "note") { if (!g.moved) openNote(g.n); return; }
+    if (g.kind === "sticker") { if (!g.moved) { sel.clear(); sel.add(g.id); selEdge = null; drawNodes(); drawEdges(); openDetail(); } return; }
+    if (g.kind === "pin") { if (!g.moved) { checkpoint(g.n.pinned ? "Released" : "Pinned"); g.n.pinned = !g.n.pinned; save(); drawNodes(); renderDetail(); notice(g.n.pinned ? "Kept in place: layouts leave it." : "Released: layouts may move it."); } return; }
     if (g.moved) {
       // A node placed by hand stays where it was put: layouts leave it (Arrange can release).
       if (g.kind === "node") { for (const id of sel) nodeById(id).pinned = true; save(); drawNodes(); }
@@ -759,6 +874,9 @@
       if (!sel.has(g.n.id) || sel.size > 1) { sel.clear(); sel.add(g.n.id); }
       selEdge = null; drawNodes(); drawEdges();
       openDetail();
+      // A short click with the mouse edits the name in place at once.
+      lastTap = { id: g.n.id, t: performance.now() };
+      if (ev.pointerType === "mouse") startEdit(g.n);
     } else if (g.kind === "edge") {
       sel.clear(); selEdge = g.eid; drawNodes(); drawEdges(); edgeMenu(state.edges.find(e => e.id === g.eid), ev);
     } else {
@@ -768,9 +886,11 @@
   };
   vp.addEventListener("pointerup", endPointer);
   vp.addEventListener("pointercancel", endPointer);
+  let lastTap = null;
   vp.addEventListener("dblclick", ev => {
-    const nodeEl = ev.target.closest(".node");
-    if (nodeEl) { closePop(); startEdit(nodeById(nodeEl.dataset.nid)); return; }
+    // the first click turned the node into a field, so the double click may land beside it
+    const nodeEl = ev.target.closest(".node") || (lastTap && performance.now() - lastTap.t < 600 ? nodeEls.get(lastTap.id) : null);
+    if (nodeEl) { closePop(); const n = nodeById(nodeEl.dataset.nid); const inp = nodeEl.querySelector("input"); if (inp) inp.blur(); newLinked(n); return; }
     const p = toWorld(ev.clientX, ev.clientY);
     checkpoint("New node"); startEdit(addNode("New", p.x, p.y));
   });
@@ -779,6 +899,25 @@
   function showTemp(n, p) { tempEdge.setAttribute("d", `M ${n.x} ${n.y} L ${p.x} ${p.y}`); tempEdge.style.display = "block"; }
   function hideTemp() { tempEdge.style.display = "none"; }
 
+  // A free place beside a node: tried around it, to the right first, at growing distance,
+  // until the new node would overlap none.
+  function freeSpotNear(n, w = 180, h = 40) { // the size of a new node while its name is being typed
+    const z = sizeOf(n), boxes = state.nodes.map(m => { const q = sizeOf(m); return { x1: m.x - q.w / 2, y1: m.y - q.h / 2, x2: m.x + q.w / 2, y2: m.y + q.h / 2 }; });
+    const GAP = 22, free = (x, y) => !boxes.some(o => x - w / 2 - GAP < o.x2 && x + w / 2 + GAP > o.x1 && y - h / 2 - GAP < o.y2 && y + h / 2 + GAP > o.y1);
+    const angles = [0, 30, -30, 60, -60, 90, -90, 120, -120, 150, -150, 180];
+    for (let r = 1; r <= 6; r++) for (const d of angles) {
+      const rad = d * Math.PI / 180, rx = z.w / 2 + w / 2 + 40 * r, ry = z.h / 2 + h / 2 + 30 * r;
+      const x = n.x + Math.cos(rad) * rx, y = n.y + Math.sin(rad) * ry;
+      if (free(x, y)) return { x, y };
+    }
+    return { x: n.x + z.w / 2 + 160, y: n.y + 60 };
+  }
+  function newLinked(n) {
+    checkpoint("New node");
+    const p = freeSpotNear(n), m = addNode("New", p.x, p.y, n.color);
+    addEdge(n.id, m.id); sel.clear(); sel.add(m.id); drawNodes(); drawEdges(); openDetail(); startEdit(m);
+    return m;
+  }
   function startEdit(n) {
     const el = nodeEls.get(n.id); if (!el) return;
     el.innerHTML = "";
@@ -899,12 +1038,13 @@
     }
     const n = nodeById(ids[0]), links = edgesOf(n.id);
     const others = links.map(e => ({ e, m: nodeById(e.from === n.id ? e.to : e.from) })).filter(o => o.m);
-    box.innerHTML = `<div class="grab"></div><div class="dh"><div class="tw"><input id="detTitle" value="${esc(n.title)}" aria-label="Name of the node"><div class="sub">${others.length} ${others.length === 1 ? "link" : "links"}${n.pinned ? " · placed by hand" : ""}</div></div>${x}</div>
-      <div class="kv"><div class="k">Group</div><div><button class="v" data-dgroup="1"><span class="ln" style="background:${esc(n.color)}"></span>${esc(groupName(n.color) || "unnamed")}</button></div>
-      ${others.map((o, i) => `<div class="k">${i ? "" : "Links"}</div><div><button class="v" data-dgo="${esc(o.m.id)}">${vstick(o.m.color)}${esc(o.m.title)}${o.e.directed ? (o.e.from === n.id ? " →" : " ←") : ""}</button></div>`).join("")}</div>
+    // The heading: the group as a stick (click: another group) and the name (click: edit).
+    const arrow = o => o.e.both ? " ↔" : o.e.directed ? (o.e.from === n.id ? " →" : " ←") : "";
+    box.innerHTML = `<div class="grab"></div><div class="dh"><div class="tw"><div class="cap">Node</div><div class="hrow"><button class="stk" data-dgroup="1" title="Group: ${esc(groupName(n.color) || "unnamed")}. Click to change" aria-label="Group ${esc(groupName(n.color) || "unnamed")}, change"><i style="background:${esc(n.color)}"></i></button><input id="detTitle" value="${esc(n.title)}" aria-label="Name of the node" title="Click to edit"></div><div class="sub">${esc(groupName(n.color) || "no group")} · ${others.length} ${others.length === 1 ? "link" : "links"}${n.pinned ? " · placed by hand" : ""}</div></div>${x}</div>
+      ${others.length ? `<div class="kv">${others.map((o, i) => `<div class="k">${i ? "" : "Links"}</div><div><button class="v" data-dgo="${esc(o.m.id)}">${vstick(o.m.color)}${esc(o.m.title)}${arrow(o)}${o.e.label ? ` <span style="color:var(--muted);font-size:14px">· ${esc(o.e.label)}</span>` : ""}</button></div>`).join("")}</div>` : ""}
       <h4>Note</h4><textarea id="detNote" maxlength="5000" placeholder="More about this node: text, a link, an address …">${esc(n.note || "")}</textarea>
       <div class="acts"><button class="primary" data-dnew="1">+ Linked node</button><button data-dlink="1">Link to …</button><button class="danger" data-ddel="1">Delete</button></div>
-      <div class="more"><button data-dpin="1">${n.pinned ? "Release (layouts may move it)" : "Keep in place"}</button><button data-dcenter="1">Centre of the radial layout</button></div>`;
+      <div class="more"><button data-dpin="1">${n.pinned ? "Release (layouts may move it)" : "Keep in place"}</button><button data-dcenter="1" title="Untangle with this node in the middle">Untangle around it</button></div>`;
   }
   $("det").addEventListener("click", ev => {
     const b = ev.target.closest("button"); if (!b) return;
@@ -912,10 +1052,10 @@
     if (b.dataset.dx) { sel.clear(); drawNodes(); closeDetail(); return; }
     if (b.dataset.dgroup) { groupChooser(ids, b); return; }
     if (b.dataset.dgo) { sel.clear(); sel.add(b.dataset.dgo); drawNodes(); drawEdges(); renderDetail(); const m = nodeById(b.dataset.dgo); const r = vp.getBoundingClientRect(); const p = toWorld(r.left + r.width / 2, r.top + r.height / 2); if (Math.abs(p.x - m.x) * view.s > r.width / 3 || Math.abs(p.y - m.y) * view.s > r.height / 3) { view.x += (p.x - m.x) * view.s; view.y += (p.y - m.y) * view.s; applyView(); } return; }
-    if (b.dataset.dnew && n) { checkpoint("New node"); const m = addNode("New", n.x + 180, n.y + 60, n.color); addEdge(n.id, m.id); sel.clear(); sel.add(m.id); drawNodes(); renderDetail(); startEdit(m); return; }
+    if (b.dataset.dnew && n) { newLinked(n); return; }
     if (b.dataset.dlink && n) { linking = n.id; drawNodes(); if (!wide()) $("det").classList.add("hidden"); notice("Tap the node to connect to."); return; }
     if (b.dataset.dpin) { const all = ids.every(id => nodeById(id).pinned); checkpoint(all ? "Unpinned" : "Pinned"); for (const id of ids) nodeById(id).pinned = !all; save(); drawNodes(); renderDetail(); return; }
-    if (b.dataset.dcenter && n) { state.radialCenter = n.id; runLayout("radial"); return; }
+    if (b.dataset.dcenter && n) { state.radialCenter = n.id; untangle(); return; }
     if (b.dataset.ddel) {
       if (b.dataset.armed) { removeNodes(ids); sel.clear(); closeDetail(); return; }
       b.dataset.armed = "1"; b.textContent = "Tap again: delete with " + ids.reduce((s, id) => s + edgesOf(id).length, 0) + " links";
@@ -930,11 +1070,35 @@
 
   function edgeMenu(e, ev) {
     if (!e) return;
+    const a = nodeById(e.from), b = nodeById(e.to);
     openPop("Link", () => {
-      opt(e.directed ? "Remove the arrow" : "Add an arrow", () => { checkpoint("Arrow"); e.directed = !e.directed; save(); drawEdges(); closePop(); });
-      if (e.directed) opt("Reverse the arrow", () => { checkpoint("Arrow"); [e.from, e.to] = [e.to, e.from]; save(); drawEdges(); closePop(); });
+      const row = document.createElement("div"); row.className = "row";
+      row.innerHTML = `<input aria-label="Label of the link" placeholder="Label" value="${esc(e.label || "")}"><button class="ok" aria-label="Apply">✓</button>`;
+      pop.appendChild(row);
+      const inp = row.querySelector("input");
+      const apply = () => { const v = inp.value.trim(); if (v !== (e.label || "")) { checkpoint("Label"); if (v) e.label = v; else delete e.label; save(); drawEdges(); renderDetail(); } closePop(); };
+      row.querySelector(".ok").onclick = apply;
+      inp.onkeydown = k => { if (k.key === "Enter") apply(); k.stopPropagation(); };
+      lbl("Arrow");
+      const cur = e.both ? "both" : !e.directed ? "none" : "to";
+      const seg = document.createElement("div"); seg.className = "seg";
+      const setDir = d => { checkpoint("Arrow"); if (d === "none") { e.directed = false; e.both = false; } else if (d === "both") { e.directed = true; e.both = true; } else { if (d === "back") [e.from, e.to] = [e.to, e.from]; e.directed = true; e.both = false; } save(); drawEdges(); renderDetail(); closePop(); };
+      for (const [d, t, tip] of [["none", "—", "No arrow"], ["to", "→", "Arrow to " + (b ? b.title : "")], ["back", "←", "Arrow to " + (a ? a.title : "")], ["both", "↔", "Arrows at both ends"]]) {
+        const bt = document.createElement("button"); bt.textContent = t; bt.title = tip; bt.setAttribute("aria-label", tip);
+        bt.setAttribute("aria-pressed", String(d === cur)); bt.onclick = () => setDir(d); seg.appendChild(bt);
+      }
+      pop.appendChild(seg);
+      lbl("Line");
+      const seg2 = document.createElement("div"); seg2.className = "seg";
+      for (const [d, t] of [[false, "Solid"], [true, "Dashed"]]) {
+        const bt = document.createElement("button"); bt.textContent = t; bt.setAttribute("aria-pressed", String(!!e.dashed === d));
+        bt.onclick = () => { checkpoint("Line"); if (d) e.dashed = true; else delete e.dashed; save(); drawEdges(); closePop(); };
+        seg2.appendChild(bt);
+      }
+      pop.appendChild(seg2);
       sep();
       opt("Delete", () => { closePop(); checkpoint("Link deleted"); removeEdge(e); selEdge = null; notice("Link deleted.", true); }, "danger");
+      if (!matchMedia("(pointer: coarse)").matches) setTimeout(() => inp.focus(), 0);
     }, { x: ev.clientX, y: ev.clientY });
   }
   function finishLink(target) {
@@ -979,6 +1143,7 @@
   }
   function removeEdge(e) {
     state.edges = state.edges.filter(x => x.id !== e.id);
+    const lt = labelEls.get(e.id); if (lt) { lt.remove(); labelEls.delete(e.id); }
     const g = edgeEls.get(e.id); if (g) { g.hit.remove(); g.line.remove(); edgeEls.delete(e.id); }
     save();
   }
@@ -1127,6 +1292,180 @@
     });
     return targets;
   }
+  // ---------- Untangle: few crossings, short links ----------
+  // 1. Each connected part is laid out as a radial tree from its best-connected node, with
+  //    sectors in proportion to the size of the subtrees: a tree drawn like this has no
+  //    crossing links at all. 2. Springs and repulsion even it out (links as springs of a
+  //    length fitted to the node sizes). 3. A local search moves single nodes, or swaps two,
+  //    wherever that removes crossings without making links much longer. 4. The parts are
+  //    packed side by side, nodes without links in a row below. Nodes placed by hand stay.
+  function layoutUntangle() {
+    const ns = state.nodes.filter(n => !isSticker(n)), out = new Map();
+    if (!ns.length) return out;
+    const sz = new Map(ns.map(n => [n.id, sizeOf(n)]));
+    const adj = new Map(ns.map(n => [n.id, []]));
+    const es = state.edges.filter(e => adj.has(e.from) && adj.has(e.to));
+    for (const e of es) { adj.get(e.from).push(e.to); adj.get(e.to).push(e.from); }
+    const pos = new Map(ns.map(n => [n.id, { x: n.x, y: n.y }]));
+    const fixed = id => nodeById(id).pinned;
+    // ideal link length: as short as the node sizes allow, times the spacing (Loosen raises it)
+    const L = (36 + 0.85 * ns.reduce((s, n) => s + sz.get(n.id).w, 0) / ns.length) * spacing();
+    // components
+    const comp = [], seen = new Set();
+    for (const n of ns) {
+      if (seen.has(n.id)) continue;
+      const c = [], q = [n.id]; seen.add(n.id);
+      while (q.length) { const v = q.shift(); c.push(v); for (const w of adj.get(v)) if (!seen.has(w)) { seen.add(w); q.push(w); } }
+      comp.push(c);
+    }
+    const singles = comp.filter(c => c.length === 1).map(c => c[0]), parts = comp.filter(c => c.length > 1).sort((a, b) => b.length - a.length);
+    const cross = (p, q, r, s) => {
+      const d = (a, b, c) => (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
+      return (d(r, s, p) > 0) !== (d(r, s, q) > 0) && (d(p, q, r) > 0) !== (d(p, q, s) > 0);
+    };
+    const local = [];
+    for (const c of parts) {
+      const inC = new Set(c), ce = es.filter(e => inC.has(e.from));
+      const P = new Map(), ids = c;
+      // 1. radial tree
+      const roots = c.includes(state.radialCenter) ? [state.radialCenter] : c.slice().sort((a, b) => adj.get(b).length - adj.get(a).length).slice(0, 4);
+      let bestP = null, bestScore = Infinity;
+      for (const root of roots) {
+      const parent = new Map([[root, null]]), order = [root], kids = new Map(c.map(v => [v, []]));
+      for (let i = 0; i < order.length; i++) for (const w of adj.get(order[i])) if (!parent.has(w)) { parent.set(w, order[i]); kids.get(order[i]).push(w); order.push(w); }
+      const leaves = new Map();
+      for (const v of order.slice().reverse()) leaves.set(v, kids.get(v).length ? kids.get(v).reduce((s, k) => s + leaves.get(k), 0) : 1);
+      const depth = new Map([[root, 0]]);
+      for (const v of order) for (const k of kids.get(v)) depth.set(k, depth.get(v) + 1);
+      const place = (v, a0, a1) => {
+        const d = depth.get(v), mid = (a0 + a1) / 2, r = d * L * 1.1;
+        P.set(v, { x: Math.cos(mid) * r, y: Math.sin(mid) * r * 0.8 });
+        let at = a0;
+        for (const k of kids.get(v)) { const span = (a1 - a0) * leaves.get(k) / leaves.get(v); place(k, at, at + span); at += span; }
+      };
+      place(root, 0, Math.PI * 2);
+      // 2. springs and repulsion
+      for (let it = 0, T = L; it < 260; it++, T *= 0.985) {
+        const F = new Map(ids.map(v => [v, { x: 0, y: 0 }]));
+        for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) {
+          const a = P.get(ids[i]), b = P.get(ids[j]);
+          let dx = a.x - b.x, dy = a.y - b.y, d = Math.hypot(dx, dy) || 0.1;
+          const room = (sz.get(ids[i]).w + sz.get(ids[j]).w) / 2 + 18 * spacing();
+          const f = (L * L) / d + (d < room ? (room - d) * 4 : 0);
+          dx /= d; dy /= d;
+          F.get(ids[i]).x += dx * f; F.get(ids[i]).y += dy * f; F.get(ids[j]).x -= dx * f; F.get(ids[j]).y -= dy * f;
+        }
+        for (const e of ce) {
+          const a = P.get(e.from), b = P.get(e.to);
+          let dx = b.x - a.x, dy = b.y - a.y; const d = Math.hypot(dx, dy) || 0.1, f = (d * d) / L;
+          dx /= d; dy /= d;
+          F.get(e.from).x += dx * f; F.get(e.from).y += dy * f; F.get(e.to).x -= dx * f; F.get(e.to).y -= dy * f;
+        }
+        for (const v of ids) { const f = F.get(v), m = Math.hypot(f.x, f.y) || 1, s = Math.min(m, T) / m; P.get(v).x += f.x * s; P.get(v).y += f.y * s * 0.85; }
+      }
+      // 3. local search against crossings
+      const crossingsOf = list => {
+        let n = 0;
+        for (const e of list) for (const f of ce) {
+          if (e === f || e.from === f.from || e.from === f.to || e.to === f.from || e.to === f.to) continue;
+          if (cross(P.get(e.from), P.get(e.to), P.get(f.from), P.get(f.to))) n++;
+        }
+        return n;
+      };
+      const lenOf = list => list.reduce((s, e) => s + Math.hypot(P.get(e.from).x - P.get(e.to).x, P.get(e.from).y - P.get(e.to).y), 0);
+      const incident = v => ce.filter(e => e.from === v || e.to === v);
+      const cost = list => crossingsOf(list) * 1000 + lenOf(list) / L;
+      for (let pass = 0; pass < 6; pass++) {
+        let improved = false;
+        const bad = ids.filter(v => crossingsOf(incident(v)) > 0);
+        for (const v of bad) {
+          const inc = incident(v), here = { ...P.get(v) }, c0 = cost(inc);
+          let best = null, bestC = c0;
+          // a. other places around the centre of its neighbours
+          const nb = adj.get(v), cx = nb.reduce((s, w) => s + P.get(w).x, 0) / nb.length, cy = nb.reduce((s, w) => s + P.get(w).y, 0) / nb.length;
+          for (let k = 0; k < 16; k++) for (const r of [L * 0.8, L * 1.3]) {
+            const cand = { x: cx + Math.cos(k * Math.PI / 8) * r, y: cy + Math.sin(k * Math.PI / 8) * r * 0.8 };
+            if (ids.some(w => w !== v && Math.abs(P.get(w).x - cand.x) < (sz.get(w).w + sz.get(v).w) / 2 + 16 && Math.abs(P.get(w).y - cand.y) < (sz.get(w).h + sz.get(v).h) / 2 + 12)) continue;
+            P.set(v, cand); const cc = cost(inc); if (cc < bestC - 0.01) { bestC = cc; best = { kind: "move", p: cand }; }
+          }
+          P.set(v, here);
+          // b. swap with another node
+          for (const u of ids) {
+            if (u === v || fixed(u) || fixed(v)) continue;
+            const both = [...new Set([...inc, ...incident(u)])], before = cost(both), pu = P.get(u);
+            P.set(u, here); P.set(v, pu); const after = cost(both); P.set(u, pu); P.set(v, here);
+            if (after - before < bestC - c0 - 0.01) { bestC = c0 + after - before; best = { kind: "swap", u }; }
+          }
+          if (best && !fixed(v)) {
+            if (best.kind === "move") P.set(v, best.p);
+            else { const pu = P.get(best.u); P.set(best.u, here); P.set(v, pu); }
+            improved = true;
+          }
+        }
+        if (!improved) break;
+      }
+        const score = crossingsOf(ce) * 1000 + lenOf(ce) / L;
+        if (score < bestScore) { bestScore = score; bestP = new Map([...P].map(([k, v]) => [k, { ...v }])); }
+        P.clear();
+      }
+      for (const [k, v] of bestP) P.set(k, v);
+      let x1 = 1e9, y1 = 1e9, x2 = -1e9, y2 = -1e9;
+      for (const v of ids) { const p = P.get(v), z = sz.get(v); x1 = Math.min(x1, p.x - z.w / 2); x2 = Math.max(x2, p.x + z.w / 2); y1 = Math.min(y1, p.y - z.h / 2); y2 = Math.max(y2, p.y + z.h / 2); }
+      local.push({ P, ids, w: x2 - x1, h: y2 - y1, x1, y1 });
+    }
+    // 4. packing: parts in rows, then the nodes without links
+    let cx = 0, cy = 0, n0 = 0; for (const n of ns) { cx += n.x; cy += n.y; n0++; } cx /= n0; cy /= n0;
+    const GAPP = 50 * spacing();
+    const total = local.reduce((s, l) => s + (l.w + GAPP) * (l.h + GAPP), 0), rowW = Math.max(700, Math.sqrt(total) * 1.4);
+    let x = 0, y = 0, rowH = 0;
+    for (const l of local) {
+      if (x > 0 && x + l.w > rowW) { x = 0; y += rowH + GAPP; rowH = 0; }
+      for (const v of l.ids) { const p = l.P.get(v); out.set(v, { x: x + p.x - l.x1, y: y + p.y - l.y1 }); }
+      x += l.w + GAPP; rowH = Math.max(rowH, l.h);
+    }
+    y += rowH + (local.length ? 90 : 0); x = 0; rowH = 0;
+    for (const v of singles) {
+      const z = sz.get(v);
+      if (x > 0 && x + z.w > rowW) { x = 0; y += rowH + 24; rowH = 0; }
+      out.set(v, { x: x + z.w / 2, y: y + z.h / 2 }); x += z.w + 24; rowH = Math.max(rowH, z.h);
+    }
+    // centre on where the map was; nodes placed by hand stay where they are
+    let mx = 0, my = 0; for (const p of out.values()) { mx += p.x; my += p.y; } mx /= out.size; my /= out.size;
+    for (const [v, p] of out) { if (fixed(v)) { out.delete(v); continue; } p.x += cx - mx; p.y += cy - my; }
+    return out;
+  }
+  // Spacing: 1 is as compact as readable; Loosen raises it in steps, Compact lowers it again.
+  // Kept with the map in this browser.
+  const spacing = () => state.spacing || 1;
+  function loosen() {
+    state.spacing = Math.min(2.2, Math.round((spacing() + 0.25) * 100) / 100);
+    untangle("Loosened (spacing " + Math.round(spacing() * 100) + " %)");
+  }
+  function untangle(label) {
+    if (!state.nodes.length) return;
+    crossing.clear();
+    const targets = layoutUntangle();
+    if (!targets.size) { notice("Nothing to move: every node is placed by hand."); return; }
+    checkpoint(typeof label === "string" ? "Loosened" : "Untangled");
+    animateTo(targets, () => {
+      resolveCollisions(state.nodes, 24); drawNodes(); drawEdges(); save(); fitView();
+      const n = countCrossings();
+      notice((typeof label === "string" ? label + ". " : "") + (n ? n + (n === 1 ? " crossing left" : " crossings left") + "; nodes placed by hand stay where they are." : "No crossing links."), true);
+    });
+  }
+  function countCrossings() {
+    const P = e => { const a = nodeById(e.from), b = nodeById(e.to); return [a, b]; };
+    const shown = e => !isSticker(nodeById(e.from)) && !isSticker(nodeById(e.to));
+    const d = (a, b, c) => (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
+    const es = state.edges.filter(e => nodeById(e.from) && nodeById(e.to) && shown(e)); let n = 0;
+    for (let i = 0; i < es.length; i++) for (let j = i + 1; j < es.length; j++) {
+      const e = es[i], f = es[j];
+      if (e.from === f.from || e.from === f.to || e.to === f.from || e.to === f.to) continue;
+      const [p, q] = P(e), [r, s] = P(f);
+      if ((d(r, s, p) > 0) !== (d(r, s, q) > 0) && (d(p, q, r) > 0) !== (d(p, q, s) > 0)) n++;
+    }
+    return n;
+  }
   function animateTo(targets, done) {
     for (const t of targets.values()) { t.x = Math.max(120, Math.min(W - 120, t.x)); t.y = Math.max(120, Math.min(H - 120, t.y)); }
     const start = performance.now(), from = new Map();
@@ -1158,15 +1497,11 @@
   // The Arrange menu: layouts move only nodes that were not placed by hand.
   const arrangeMenu = anchor => openPop("Arrange", () => {
     const pinned = state.nodes.filter(n => n.pinned).length;
+    opt("Untangle: few crossings, short links", () => { closePop(); untangle(); });
+    opt("Loosen: more room between the nodes", () => { closePop(); loosen(); });
     opt("Compact: close the gaps, keep the order", () => { closePop(); compact(); });
     opt("Resolve overlaps, mark crossing links", () => { closePop(); checkReadability(); });
-    sep();
-    lbl(pinned ? "Layouts · " + pinned + " placed by hand stay" : "Layouts");
-    opt("Groups", () => { closePop(); runLayout("cluster"); });
-    opt("Radial", () => { closePop(); runLayout("radial"); });
-    opt("Hierarchy", () => { closePop(); runLayout("hierarchy"); });
-    opt("Force", () => { closePop(); runLayout("force"); });
-    if (pinned) { sep(); opt("Release all " + pinned + " placed by hand", () => { closePop(); checkpoint("Released"); state.nodes.forEach(n => n.pinned = false); save(); drawNodes(); notice("All nodes released.", true); }); }
+    if (pinned) { sep(); lbl(pinned + " placed by hand stay"); opt("Release all " + pinned, () => { closePop(); checkpoint("Released"); state.nodes.forEach(n => n.pinned = false); save(); drawNodes(); notice("All nodes released.", true); }); }
   }, anchor);
   $("btnArrange").onclick = () => arrangeMenu($("btnArrange"));
 
@@ -1175,6 +1510,7 @@
   // overlaps, and repeats until nothing moves any more. Neighbours stay neighbours; only
   // the empty space goes. Hand-placed nodes move too: this is a command, not a layout.
   function compact() {
+    state.spacing = 1;
     const ns = state.nodes; if (ns.length < 2) return;
     const sz = new Map(ns.map(n => [n.id, sizeOf(n)]));
     const p = ns.map(n => ({ id: n.id, x: n.x, y: n.y, w: sz.get(n.id).w, h: sz.get(n.id).h }));
@@ -1304,7 +1640,7 @@
   $("mdInput").onchange = () => {
     const f = $("mdInput").files[0]; if (!f) return;
     f.text().then(t => {
-      try { const r = markmapImportText(t); $("dlgSettings").close(); openSide(false); notice("Imported: " + r.nodes + " nodes, " + r.edges + " links" + (r.foreign ? "; colours by branch." : "; positions and colours restored."), true); if (r.foreign) setTimeout(() => runLayout("hierarchy"), 80); }
+      try { const r = markmapImportText(t); $("dlgSettings").close(); openSide(false); notice("Imported: " + r.nodes + " nodes, " + r.edges + " links" + (r.foreign ? "; colours by branch." : "; positions and colours restored."), true); if (r.foreign) setTimeout(untangle, 80); }
       catch (err) { notice("Not imported: " + err.message + "."); }
     });
     $("mdInput").value = "";
@@ -1340,7 +1676,7 @@
   }
   function toText() {
     const keys = groupKeys(), out = [];
-    for (const [c, k] of keys) out.push("Group: " + (state.legend[c] || "") + " #group-" + k + " #color-" + c.replace("#", "").toUpperCase());
+    for (const [c, k] of keys) out.push("Group: " + (state.legend[c] || "") + " #group-" + k + " #color-" + c.replace("#", "").toUpperCase() + (state.stickers && state.stickers[c] ? " #stickers" : ""));
     if (out.length) out.push("");
     for (const n of state.nodes) {
       let line = (n.title || "…").replace(/\s+/g, " ").trim();
@@ -1350,8 +1686,8 @@
       for (const e of state.edges) {
         if (e.from !== n.id && e.to !== n.id) continue;
         const other = e.from === n.id ? e.to : e.from;
-        const kind = !e.directed ? "plain" : e.from === n.id ? "to" : "from";
-        line += " #id-" + numOf(other) + " #link-" + kind;
+        const kind = e.both ? "both" : !e.directed ? "plain" : e.from === n.id ? "to" : "from";
+        line += " #id-" + numOf(other) + " #link-" + kind + (e.dashed ? " #dashed" : "") + (e.label ? ' #label-"' + e.label.replace(/"/g, "'") + '"' : "");
       }
       line += " #at-" + Math.round(n.x) + "," + Math.round(n.y);
       if (n.pinned) line += " #pinned";
@@ -1367,12 +1703,12 @@
     String(text).split(/\r?\n/).forEach((raw, i) => {
       const line = raw.trim(); if (!line) return;
       const ln = i + 1;
-      const g = /^Group:\s*(.*?)\s*#group-(\S+)(?:\s+#color-([0-9a-fA-F]{6}))?\s*$/.exec(line);
-      if (g) { groups.set(g[2].toLowerCase(), { name: g[1], color: g[3] ? "#" + g[3].toUpperCase() : null }); return; }
+      const g = /^Group:\s*(.*?)\s*#group-(\S+)(?:\s+#color-([0-9a-fA-F]{6}))?(\s+#stickers)?\s*$/.exec(line);
+      if (g) { groups.set(g[2].toLowerCase(), { name: g[1], color: g[3] ? "#" + g[3].toUpperCase() : null, stickers: !!g[4] }); return; }
       // text and note, then the run of tags at the end
       let rest = line, note = "";
-      const toks = rest.split(/\s+/); let k = toks.length;
-      while (k > 0 && /^#[a-z]+(-\S*)?$/.test(toks[k - 1])) k--;
+      const toks = rest.match(/#label-"[^"]*"|\S+/g) || []; let k = toks.length;
+      while (k > 0 && (/^#[a-z]+(-\S*)?$/.test(toks[k - 1]) || /^#label-"/.test(toks[k - 1]))) k--;
       const tags = toks.slice(k); rest = toks.slice(0, k).join(" ");
       const nm = /\{\{([\s\S]*)\}\}\s*$/.exec(rest);
       if (nm) { note = nm[1].replace(/\\n/g, "\n"); rest = rest.slice(0, nm.index).trim(); }
@@ -1383,11 +1719,20 @@
           // the first tag is the node's own id, unless a #link-… follows it (then the line
           // is a new node whose first tag is a link)
           if (j === 0 && !/^#link-/.test(tags[1] || "")) { node.id = Number(m[1]); return; }
-          const nx = tags[j + 1], lk = nx && /^#link-(plain|to|from)$/.exec(nx);
-          if (!lk) errors.push("line " + ln + ": #id-" + m[1] + " has no #link-plain, #link-to or #link-from after it");
-          else node.links.push({ other: Number(m[1]), kind: lk[1] });
+          const nx = tags[j + 1], lk = nx && /^#link-(plain|to|from|both)$/.exec(nx);
+          if (!lk) errors.push("line " + ln + ": #id-" + m[1] + " has no #link-plain, #link-to, #link-from or #link-both after it");
+          else {
+            const lnk = { other: Number(m[1]), kind: lk[1], dashed: false, label: "" };
+            for (let q = j + 2; q < tags.length && !/^#id-/.test(tags[q]); q++) {
+              if (tags[q] === "#dashed") lnk.dashed = true;
+              const lm = /^#label-"([^"]*)"$/.exec(tags[q]); if (lm) lnk.label = lm[1].trim();
+            }
+            node.links.push(lnk);
+          }
+        } else if (t === "#dashed" || /^#label-"/.test(t)) {
+          if (!tags.slice(0, j).some(x => /^#link-/.test(x))) errors.push("line " + ln + ": " + t.slice(0, 20) + " without a link before it");
         } else if (/^#link-/.test(t)) {
-          if (!/^#link-(plain|to|from)$/.test(t)) errors.push("line " + ln + ": unknown " + t);
+          if (!/^#link-(plain|to|from|both)$/.test(t)) errors.push("line " + ln + ": unknown " + t);
           else if (!(j > 0 && /^#id-\d+$/.test(tags[j - 1]))) errors.push("line " + ln + ": " + t + " without an #id-… before it");
         } else if ((m = /^#group-(\S+)$/.exec(t))) node.group = m[1].toLowerCase();
         else if ((m = /^#at-(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)$/.exec(t))) node.at = { x: Number(m[1]), y: Number(m[2]) };
@@ -1417,7 +1762,9 @@
     for (const k of groups.keys()) keyColor(k);
 
     // nodes
-    const next = { nodes: [], edges: [], counter: prev.counter, legend, radialCenter: prev.radialCenter };
+    const stickers = {};
+    for (const [k, g] of groups) if (g.stickers) stickers[keyColor(k)] = true;
+    const next = { nodes: [], edges: [], counter: prev.counter, legend, stickers, radialCenter: prev.radialCenter, spacing: prev.spacing };
     let maxId = Math.max(0, ...prev.nodes.map(n => numOf(n.id)), ...lines.map(n => n.id || 0));
     const prevById = new Map(prev.nodes.map(n => [numOf(n.id), n]));
     for (const l of lines) {
@@ -1429,17 +1776,18 @@
     const alive = new Set(lines.map(l => l.id));
 
     // links, reconciled per pair
-    const rel = (kind, self, other) => kind === "plain" ? "plain" : kind === "to" ? self + ">" + other : other + ">" + self;
+    const relDir = (kind, self, other) => kind === "plain" ? "plain" : kind === "both" ? "both" : kind === "to" ? self + ">" + other : other + ">" + self;
+    const rel = (lk, self) => relDir(lk.kind, self, lk.other) + "|" + (lk.dashed ? "d" : "") + "|" + (lk.label || "");
     const pairKey = (a, b) => a < b ? a + "|" + b : b + "|" + a;
     const before = new Map();
-    for (const e of prev.edges) before.set(pairKey(numOf(e.from), numOf(e.to)), e.directed ? numOf(e.from) + ">" + numOf(e.to) : "plain");
+    for (const e of prev.edges) before.set(pairKey(numOf(e.from), numOf(e.to)), (e.both ? "both" : e.directed ? numOf(e.from) + ">" + numOf(e.to) : "plain") + "|" + (e.dashed ? "d" : "") + "|" + (e.label || ""));
     const said = new Map(); // pair -> { a: rel|none, b: rel|none } for the two lines
     const lineOf = new Map(lines.map(l => [l.id, l]));
     for (const l of lines) for (const lk of l.links) {
       if (!alive.has(lk.other) || lk.other === l.id) continue;
       const k = pairKey(l.id, lk.other);
       if (!said.has(k)) said.set(k, {});
-      said.get(k)[l.id] = rel(lk.kind, l.id, lk.other);
+      said.get(k)[l.id] = rel(lk, l.id);
     }
     const pairs = new Set([...before.keys(), ...said.keys()]);
     for (const k of pairs) {
@@ -1450,8 +1798,10 @@
       const changed = [ra, rb].filter(r => r !== pv);
       const r = changed.length ? changed[0] : pv;
       if (r === "none") continue;
-      if (r === "plain") next.edges.push({ id: "e" + k, from: "n" + a, to: "n" + b, directed: false });
-      else { const [f, t] = r.split(">"); next.edges.push({ id: "e" + k, from: "n" + f, to: "n" + t, directed: true }); }
+      const [dir, sty, label] = r.split("|"), extra = Object.assign({}, sty === "d" ? { dashed: true } : {}, label ? { label } : {});
+      if (dir === "plain") next.edges.push(Object.assign({ id: "e" + k, from: "n" + a, to: "n" + b, directed: false }, extra));
+      else if (dir === "both") next.edges.push(Object.assign({ id: "e" + k, from: "n" + a, to: "n" + b, directed: true, both: true }, extra));
+      else { const [f, t] = dir.split(">"); next.edges.push(Object.assign({ id: "e" + k, from: "n" + f, to: "n" + t, directed: true }, extra)); }
     }
     // nodes without a position: beside their neighbours, else near the centre
     for (const n of next.nodes) {
