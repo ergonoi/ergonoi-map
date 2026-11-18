@@ -57,6 +57,9 @@
   button.primary { background:var(--action-primary); border-color:var(--action-primary); color:#fff; }
   button.ghost { color:var(--fg2); }
   .hidden { display:none !important; }
+  /* Touch screens: iOS zooms the page into any field with text under 16 px when it gets the
+     focus, and the page stays zoomed. */
+  @media (pointer: coarse) { input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]), textarea, select { font-size:max(16px, 1em) !important; } }
 
   /* Layout (ui concept of the agenda, ui.md 1a): a header with one task; groups and file
      in a side panel (a drawer below 1100 px); the chosen node in a detail pane on the right
@@ -180,6 +183,7 @@
   #bbar { position:fixed; z-index:9; left:0; right:0; bottom:0; display:none; grid-template-columns:1fr 1fr 1fr; background:#FBFAFA; border-top:.5px solid var(--line); padding:6px 0 calc(6px + env(safe-area-inset-bottom)); }
   #bbar button { border:0; display:flex; flex-direction:column; align-items:center; gap:2px; font:500 12px var(--font-mark); color:var(--muted); min-height:48px; }
   #bbar button[aria-pressed="true"] { color:var(--ok); }
+  html.ergonoi #bbar button[aria-pressed="true"] { color:var(--fg); font-weight:600; } /* as in ergonoi Agenda: colour only where it points to something */
   #bbar svg { width:24px; height:24px; }
   @media (max-width: 600px) {
     :root { --bb:64px; }
@@ -303,6 +307,8 @@
   #empty .er .chev { width:16px; height:16px; color:var(--muted); }
   #empty .inst { margin:22px 0 0; font-size:13px; color:var(--muted); }
   #empty .motto { margin:28px 0 0; font-size:13px; color:var(--fg2); }
+  /* one line, bold, still within an iPhone 16e (390 px less the margins) */
+  #empty .motto .one { display:block; white-space:nowrap; font-weight:600; color:var(--fg); font-size:min(14px, calc((100vw - 40px) / 25.5)); }
   html.ergonoi #emptyProj { display:none; }
   html.isempty #tools { display:none; }
   #versions .vrow { display:flex; align-items:center; gap:10px; min-height:var(--tap); border-bottom:.5px solid var(--line); font-size:14px; }
@@ -480,7 +486,7 @@
   <button type="button" class="er" id="emptyDemo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.3 11l7.4-3.8M8.3 13l7.4 3.8"/></svg><span><b>Look at the example</b><small>A small trip plan to try things out</small></span><svg class="chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg></button>
   <button type="button" class="er" id="emptyOpen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3.5 6.5h6l2 2h9v10h-17z"/></svg><span><b>Open a map</b><small>A file saved before</small></span><svg class="chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg></button>
   <p class="inst hidden" id="emptyInst"></p>
-  <p class="motto"><span id="emptyProj">οὐθείς Map is an <b>ergonoi</b> project: </span>Technology is potential. Accessibility makes it matter.</p>
+  <p class="motto"><span id="emptyProj">οὐθείς Map is an <b>ergonoi</b> project:<br></span><span class="one">Technology is potential. Accessibility makes it matter.</span></p>
 </div></div>
 <div id="pop" class="hidden"></div>
 <div id="bar" class="hidden"><span id="barText"></span><button id="barUndo" class="hidden">Undo</button></div>
