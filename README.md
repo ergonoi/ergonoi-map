@@ -39,8 +39,9 @@ and the details come up as a sheet from below; on phones Map and Text are at the
 ## Working on the map
 
 - A click in the middle of a node selects it and makes its name editable at once; a click
-  near its edge only selects it (on touch screens the name is edited in the details). A double click on a node makes a new node linked to it,
-  in the same group, on a free place beside it.
+  near its edge only selects it (on touch screens the name is edited in the details). A double click on a node makes a new node in the same group
+  on a free place beside it, without a link; *+ Linked node* in the details makes one with
+  a link.
 - Links: a click on a link sets its label, the arrow (none, either direction, both ends)
   and a solid or dashed line. Directions are always seen from the selected node (*from
   here*, *to here*); in its details every link carries a small drawn arrow that opens this

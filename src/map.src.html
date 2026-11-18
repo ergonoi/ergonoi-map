@@ -936,7 +936,7 @@
   vp.addEventListener("dblclick", ev => {
     // the first click turned the node into a field, so the double click may land beside it
     const nodeEl = ev.target.closest(".node") || (lastTap && performance.now() - lastTap.t < 600 ? nodeEls.get(lastTap.id) : null);
-    if (nodeEl) { closePop(); const n = nodeById(nodeEl.dataset.nid); const inp = nodeEl.querySelector("input"); if (inp) inp.blur(); newLinked(n); return; }
+    if (nodeEl) { closePop(); const n = nodeById(nodeEl.dataset.nid); const inp = nodeEl.querySelector("input"); if (inp) inp.blur(); newLinked(n, false); return; }
     const p = toWorld(ev.clientX, ev.clientY);
     checkpoint("New node"); startEdit(addNode("New", p.x, p.y));
   });
@@ -958,10 +958,13 @@
     }
     return { x: n.x + z.w / 2 + 160, y: n.y + 60 };
   }
-  function newLinked(n) {
+  // A new node beside n, in its group; linked to it only when asked (+ Linked node), not on
+  // a double click.
+  function newLinked(n, link = true) {
     checkpoint("New node");
     const p = freeSpotNear(n), m = addNode("New", p.x, p.y, n.color);
-    addEdge(n.id, m.id); sel.clear(); sel.add(m.id); drawNodes(); drawEdges(); openDetail(); startEdit(m);
+    if (link) addEdge(n.id, m.id);
+    sel.clear(); sel.add(m.id); drawNodes(); drawEdges(); openDetail(); startEdit(m);
     return m;
   }
   function startEdit(n) {
