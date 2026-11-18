@@ -214,6 +214,8 @@
   .node .stks { display:flex; flex-wrap:wrap; gap:4px; margin-top:6px; }
   .node .stks .st { display:inline-flex; align-items:center; gap:4px; font-size:12px; line-height:1; padding:3px 6px 3px 4px; border:.5px solid var(--line); border-radius:4px; background:var(--page); cursor:pointer; }
   .node .stks .st i { width:4px; height:11px; border-radius:1px; display:block; }
+  #side .grp .addb { border:0; min-width:28px; min-height:var(--tap); padding:0; display:inline-flex; align-items:center; justify-content:center; color:var(--fg2); }
+  #side .grp .addb:hover { color:var(--fg); }
   #side .grp .delb { border:0; min-width:28px; min-height:var(--tap); padding:0; display:inline-flex; align-items:center; justify-content:center; color:var(--line); }
   #side .grp .delb:hover, #side .grp .delb:focus-visible { color:var(--danger); }
   #side .grp .tagb { border:0; min-width:28px; min-height:var(--tap); padding:0; display:inline-flex; align-items:center; justify-content:center; color:var(--line); }
@@ -284,6 +286,23 @@
   #dlgNote textarea:focus { border-color:var(--fg2); }
   .qclear { position:absolute; right:4px; top:4px; border:0; background:none; padding:6px; min-height:0; color:var(--muted); cursor:pointer; line-height:0; }
   dialog ul { margin:6px 0 0; padding-left:18px; color:var(--fg2); }
+  .prseg { display:flex; flex-wrap:wrap; gap:8px; }
+  .prseg button { min-height:52px; min-width:76px; padding:4px 12px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; font-size:13px; color:var(--fg2); }
+  .prseg button b { font-size:16px; color:var(--fg); font-weight:600; }
+  .prseg button .low { color:var(--danger); }
+  .prseg button .rec { font-size:11px; color:var(--ok); }
+  .prseg button[aria-pressed="true"] { border-color:var(--fg); box-shadow:inset 0 0 0 1px var(--fg); }
+  #printArea { display:none; }
+  @media print {
+    html.printing body > *:not(#printArea) { display:none !important; }
+    html.printing body { overflow:visible; height:auto; }
+    html.printing #printArea { display:block; }
+    #printArea .phead { height:12mm; font:10pt var(--font-head); color:#4A4646; }
+    #printArea .pframe { position:relative; overflow:hidden; }
+    #printArea .pframe > div { position:absolute; top:0; left:0; }
+    #printArea .node { box-shadow:none !important; }
+    * { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  }
   dialog li { margin:2px 0; }
 </style>
 </head>
@@ -337,6 +356,16 @@
   <div class="btnrow hidden" id="fileFallback"><button class="sec" id="fileDownload">Download (.txt)</button><button class="sec" id="fileLoad">Load a file (.txt)</button></div>
   <p class="hint" id="fileHint">A connected file is written after every change, as plain text, one line per node.</p>
 </div>
+<dialog id="dlgPrint">
+  <div class="dhead"><strong>Print or save as PDF</strong><button class="x" id="prClose" aria-label="Close">×</button></div>
+  <h3>Paper</h3>
+  <div class="prseg" id="prFormats"></div>
+  <h3>Orientation</h3>
+  <div class="prseg" id="prOrient"></div>
+  <p class="hint" id="prHint"></p>
+  <div class="btnrow" style="margin-top:16px"><button class="primary" id="prGo">Print …</button></div>
+  <p class="hint">The browser's print dialog follows. To get a PDF, choose <i>Save as PDF</i> there; the paper size is already set. The map is printed as it is now: hidden groups stay hidden, group areas print if they are shown.</p>
+</dialog>
 <dialog id="dlgVersions">
   <div class="dhead"><strong>Earlier versions</strong><button class="x" id="verClose" aria-label="Close">×</button></div>
   <div id="versions"></div>
@@ -635,7 +664,9 @@
     const r2 = vp.getBoundingClientRect(); view.x = r2.width / 2 - c.x * view.s; view.y = r2.height / 2 - c.y * view.s; applyView();
   }
   function openSide(on) {
-    if (wide()) { if (on !== undefined && on !== COLS.side) toggleCol("side", on); else if (on === undefined) toggleCol("side"); return; }
+    // On wide screens the column is folded only by ☰ (on undefined); closing the drawer after
+    // an action (on false) leaves it as it is.
+    if (wide()) { if (on === undefined) toggleCol("side"); else if (on && !COLS.side) toggleCol("side", true); return; }
     if (on === undefined) on = !$("side").classList.contains("open");
     $("side").classList.toggle("open", on); $("sdim").classList.toggle("hidden", !on);
     if (on) $("bar").classList.add("hidden");
@@ -648,6 +679,7 @@
     open: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3.5 6.5h6l2 2h9v10h-17z"/></svg>',
     save: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 4v11M7 10l5 5 5-5M4 20h16"/></svg>',
     ver: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>',
+    print: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M7 8V3.5h10V8M7 17H4.5V9.5a1.5 1.5 0 0 1 1.5-1.5h12a1.5 1.5 0 0 1 1.5 1.5V17H17M7 13.5h10v7H7z"/></svg>',
     imp: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 20V9M7 14l5-5 5 5M4 4h16"/></svg>',
     set: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg>'
   };
@@ -661,13 +693,14 @@
     const EYE_OFF = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2.5 12s3.5-6.5 9.5-6.5 9.5 6.5 9.5 6.5-3.5 6.5-9.5 6.5S2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.8"/><path d="M4 20L20 4"/></svg>';
     const TAG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3.5 12.5V4.5h8l9 9-8 8z"/><circle cx="8" cy="9" r="1.4"/></svg>';
     const TRASH = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4.5 6.5h15M9.5 6.5V4.5h5v2M6.5 6.5l1 13h9l1-13M10 10.5v6M14 10.5v6"/></svg>';
+    const PLUS = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
     let h = `<h3>Groups</h3>`;
     h += cols.map(c => {
       const n = state.nodes.filter(m => m.color === c).length, name = groupName(c), off = HIDDEN.has(c), none = c === BRAND.none;
       return `<div class="grp${off ? " off" : ""}" data-g="${esc(c)}">`
         + (none ? `<span class="swb"><span class="sw" style="background:${esc(c)}"></span></span>` : `<button type="button" class="swb" data-gc="${esc(c)}" title="Change the colour" aria-label="Colour of ${esc(name || "the group")}"><span class="sw" style="background:${esc(c)}"></span></button>`)
         + (none ? `<span class="gn nameless">no group</span>` : `<input class="gn" data-gname="${esc(c)}" value="${esc(state.legend[c] || "")}" placeholder="unnamed" aria-label="Name of the group" title="Rename">`)
-        + `<span class="n">${n}</span>` + (none ? "" : `<button type="button" class="tagb" data-gtag="${esc(c)}" aria-pressed="${!!(state.stickers || {})[c]}" title="${(state.stickers || {})[c] ? "Shown as stickers on the linked nodes; click to show as nodes" : "Show as stickers on the linked nodes (an attribute rather than a group)"}" aria-label="Stickers">${TAG}</button>`) + (none ? "" : `<button type="button" class="delb" data-gdel="${esc(c)}" title="Delete the group" aria-label="Delete ${esc(name || "the group")}">${TRASH}</button>`) + `<button type="button" class="eye" data-geye="${esc(c)}" aria-pressed="${!off}" title="${off ? "Show" : "Hide"} (press and hold: only this group)" aria-label="${off ? "Show" : "Hide"} ${esc(name || "the group")}">${off ? EYE_OFF : EYE}</button></div>`;
+        + `<span class="n">${n}</span><button type="button" class="addb" data-gnew="${esc(c)}" title="New node in ${esc(name || "this group")}" aria-label="New node in ${esc(name || "this group")}">${PLUS}</button>` + (none ? "" : `<button type="button" class="tagb" data-gtag="${esc(c)}" aria-pressed="${!!(state.stickers || {})[c]}" title="${(state.stickers || {})[c] ? "Shown as stickers on the linked nodes; click to show as nodes" : "Show as stickers on the linked nodes (an attribute rather than a group)"}" aria-label="Stickers">${TAG}</button>`) + (none ? "" : `<button type="button" class="delb" data-gdel="${esc(c)}" title="Delete the group" aria-label="Delete ${esc(name || "the group")}">${TRASH}</button>`) + `<button type="button" class="eye" data-geye="${esc(c)}" aria-pressed="${!off}" title="${off ? "Show" : "Hide"} (press and hold: only this group)" aria-label="${off ? "Show" : "Hide"} ${esc(name || "the group")}">${off ? EYE_OFF : EYE}</button></div>`;
     }).join("");
     h += `<button type="button" class="act" data-gadd="1">+ Add group</button>`;
     const loose = state.nodes.filter(n => !isSticker(n) && !linksShown(n.id).length).length;
@@ -681,6 +714,7 @@
       ${FILE.handle ? `<button type="button" class="mrow" data-f="disc">Disconnect the file</button>` : ""}
       <button type="button" class="mrow" data-f="ver">${ICO.ver}Versions<span class="r">${versionCount || ""}</span></button>
       <button type="button" class="mrow" data-f="imp">${ICO.imp}Import Markmap …</button>
+      <button type="button" class="mrow" data-f="print">${ICO.print}Print or PDF …<span class="r">A4–A0</span></button>
       <div class="narrow"><div class="sepl"></div><button type="button" class="mrow" data-f="set">${ICO.set}Settings</button><p class="hint">Version @@VERSION@@</p></div>`;
     box.innerHTML = h;
   }
@@ -712,6 +746,17 @@
     if (b.dataset.unconn) { setUnconn(!UNCONN); return; }
     if (b.dataset.regions) { REGIONS = !REGIONS; saveRegions(); drawRegions(); renderSide(); return; }
     if (b.dataset.gdel) { deleteGroup(b.dataset.gdel, b); return; }
+    if (b.dataset.gnew) {
+      // a new node of this group, beside its other nodes (or in the middle of the view)
+      const c = b.dataset.gnew, mates = state.nodes.filter(n => n.color === c && !isSticker(n));
+      checkpoint("New node");
+      if (HIDDEN.has(c)) { HIDDEN.delete(c); saveHidden(); }
+      let m;
+      if (mates.length) { const anchor = mates.reduce((a, x) => (x.y > a.y ? x : a)); const p = freeSpotNear(anchor); m = addNode("New", p.x, p.y, c); }
+      else { const r = vp.getBoundingClientRect(), p = toWorld(r.left + r.width / 2, r.top + r.height / 2); m = addNode("New", p.x, p.y, c); }
+      sel.clear(); sel.add(m.id); drawNodes(); drawEdges(); openDetail(); renderSide(); openSide(false);
+      startEdit(m); return;
+    }
     if (b.dataset.gtag) {
       state.stickers = state.stickers || {};
       const c = b.dataset.gtag, on = !state.stickers[c];
@@ -740,6 +785,7 @@
     else if (f === "disc") $("fileDisconnect").click();
     else if (f === "ver") { renderVersions(); $("dlgVersions").showModal(); }
     else if (f === "imp") $("mdInput").click();
+    else if (f === "print") { openSide(false); openPrint(); }
     else if (f === "set") { openSide(false); $("dlgSettings").showModal(); }
   });
   // Renaming in Edit: kept on leaving the field or Enter; an empty name removes the name.
@@ -770,6 +816,7 @@
     opt("Open a file …", () => { closePop(); (canFile ? $("fileOpen") : $("fileLoad")).click(); });
     if (!FILE.handle) opt(canFile ? "Save to a file …" : "Download (.txt)", () => { closePop(); (canFile ? $("fileNew") : $("fileDownload")).click(); });
     opt("Earlier versions …", () => { closePop(); renderVersions(); $("dlgVersions").showModal(); });
+    opt("Print or PDF …", () => { closePop(); openPrint(); });
   }, $("titleBtn"));
 
   // Another colour for a whole group: the free colours of the palette (a colour in use
@@ -1800,6 +1847,84 @@
       regionLayer.appendChild(r); regionLayer.appendChild(t);
     }
   }
+  // ---------- Print and PDF on DIN A4 to A0 ----------
+  // The map is printed through the browser (Save as PDF there). The text of a node is 15 px
+  // at scale 1, that is 11.25 pt; the print scale is chosen to fit the page, and the
+  // recommended format is the smallest one on which the text keeps at least 12 pt.
+  const DIN = { A4: [210, 297], A3: [297, 420], A2: [420, 594], A1: [594, 841], A0: [841, 1189] };
+  const PRINT_MARGIN = 10, PRINT_HEAD = 12, MIN_PT = 12, BASE_PT = 11.25;
+  const pxPerMm = 96 / 25.4;
+  function printBox() {
+    let x1 = 1e9, y1 = 1e9, x2 = -1e9, y2 = -1e9;
+    for (const n of state.nodes) {
+      if (HIDDEN.has(n.color) || isSticker(n)) continue;
+      const z = sizeOf(n); x1 = Math.min(x1, n.x - z.w / 2); x2 = Math.max(x2, n.x + z.w / 2); y1 = Math.min(y1, n.y - z.h / 2); y2 = Math.max(y2, n.y + z.h / 2);
+    }
+    const pad = REGIONS ? 46 : 16;
+    return { x1: x1 - pad, y1: y1 - pad, w: x2 - x1 + 2 * pad, h: y2 - y1 + 2 * pad };
+  }
+  // scale and font size for a format and orientation
+  function printFit(fmt, landscape) {
+    const [a, b] = DIN[fmt], W = landscape ? b : a, H = landscape ? a : b;
+    const iw = (W - 2 * PRINT_MARGIN) * pxPerMm, ih = (H - 2 * PRINT_MARGIN - PRINT_HEAD) * pxPerMm, bx = printBox();
+    const s = Math.min(iw / bx.w, ih / bx.h);
+    return { W, H, s, pt: BASE_PT * s, bx };
+  }
+  const bestOrientation = fmt => printFit(fmt, true).s >= printFit(fmt, false).s;
+  function recommendedFormat() {
+    for (const f of ["A4", "A3", "A2", "A1", "A0"]) if (printFit(f, bestOrientation(f)).pt >= MIN_PT) return f;
+    return "A0";
+  }
+  let printSel = null;
+  function openPrint() {
+    if (!state.nodes.length) { notice("Nothing to print yet."); return; }
+    const rec = recommendedFormat();
+    printSel = { fmt: rec, land: bestOrientation(rec) };
+    renderPrint(); $("dlgPrint").showModal();
+  }
+  function renderPrint() {
+    const rec = recommendedFormat();
+    $("prFormats").innerHTML = ["A4", "A3", "A2", "A1", "A0"].map(f => {
+      const fit = printFit(f, f === printSel.fmt ? printSel.land : bestOrientation(f)), ok = fit.pt >= MIN_PT;
+      return `<button type="button" data-prf="${f}" aria-pressed="${f === printSel.fmt}"><b>${f}</b><span class="${ok ? "" : "low"}">${fit.pt.toFixed(1)} pt</span>${f === rec ? '<span class="rec">recommended</span>' : ""}</button>`;
+    }).join("");
+    $("prOrient").innerHTML = [[false, "Portrait"], [true, "Landscape"]].map(([l, t]) => `<button type="button" data-pro="${l ? 1 : 0}" aria-pressed="${printSel.land === l}">${t}</button>`).join("");
+    const fit = printFit(printSel.fmt, printSel.land);
+    $("prHint").textContent = fit.pt >= MIN_PT
+      ? `The text of the nodes prints at ${fit.pt.toFixed(1)} pt on ${printSel.fmt} ${printSel.land ? "landscape" : "portrait"}.`
+      : `On ${printSel.fmt} the text prints at only ${fit.pt.toFixed(1)} pt, below the ${MIN_PT} pt that stay readable${printSel.fmt === "A0" ? "; the map is larger than A0 allows. Hiding groups or Compact makes it smaller." : "; " + rec + " keeps it readable."}`;
+  }
+  function doPrint() {
+    const fit = printFit(printSel.fmt, printSel.land), bx = fit.bx;
+    const area = document.createElement("div"); area.id = "printArea";
+    const head = document.createElement("div"); head.className = "phead";
+    head.textContent = (state.title || (FILE.name ? FILE.name.replace(/\.[^.]+$/, "") : "Untitled map")) + " · " + new Date().toLocaleDateString();
+    const frame = document.createElement("div"); frame.className = "pframe";
+    frame.style.width = (fit.W - 2 * PRINT_MARGIN) + "mm"; frame.style.height = (fit.H - 2 * PRINT_MARGIN - PRINT_HEAD) + "mm";
+    const w = world.cloneNode(true); w.removeAttribute("id");
+    w.querySelectorAll(".node.sel").forEach(n => n.classList.remove("sel"));
+    w.querySelectorAll(".lh, .pin.off, .nd:not(.has), path.hit, #tempEdge").forEach(x => x.remove());
+    w.style.transform = `scale(${fit.s}) translate(${-bx.x1}px, ${-bx.y1}px)`;
+    w.style.transformOrigin = "0 0";
+    frame.appendChild(w); area.appendChild(head); area.appendChild(frame);
+    document.body.appendChild(area);
+    const st = document.createElement("style"); st.id = "printPage";
+    st.textContent = `@page { size: ${fit.W}mm ${fit.H}mm; margin: ${PRINT_MARGIN}mm; }`;
+    document.head.appendChild(st);
+    document.documentElement.classList.add("printing");
+    const done = () => { area.remove(); st.remove(); document.documentElement.classList.remove("printing"); window.removeEventListener("afterprint", done); };
+    window.addEventListener("afterprint", done);
+    $("dlgPrint").close();
+    setTimeout(() => { window.print(); setTimeout(() => { if (document.getElementById("printArea")) done(); }, 1000); }, 50);
+  }
+  $("dlgPrint").addEventListener("click", ev => {
+    const b = ev.target.closest("button"); if (!b) return;
+    if (b.dataset.prf) { printSel.fmt = b.dataset.prf; printSel.land = bestOrientation(printSel.fmt); renderPrint(); }
+    else if (b.dataset.pro !== undefined) { printSel.land = b.dataset.pro === "1"; renderPrint(); }
+    else if (b.id === "prGo") doPrint();
+    else if (b.id === "prClose") $("dlgPrint").close();
+  });
+
   // Spacing: 1 is as compact as readable; Loosen raises it in steps, Compact lowers it again.
   // Kept with the map in this browser.
   const spacing = () => state.spacing || 1;

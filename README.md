@@ -70,10 +70,16 @@ and the details come up as a sheet from below; on phones Map and Text are at the
   stand side by side. The rows are ordered against crossings, also across groups. *Group
   areas* (left column) shows a soft area with the name behind each group.
 - The name of the map is set in the menu under the title, and kept in its text.
+- *Print or PDF …* (left column, or the menu under the title) prints the map on DIN A4 to
+  A0, portrait or landscape; *Save as PDF* in the browser's print dialog makes the PDF. For
+  every format the dialog shows the size the text of the nodes will have and recommends the
+  smallest format on which it keeps at least 12 pt. The map prints as it is shown: hidden
+  groups stay hidden, group areas print when they are on.
 
 ## Groups
 
-A group is a name with a colour. Tap a group in the left column to hide or show its nodes,
+A group is a name with a colour. The + in a group's row makes a new node of that group
+beside its other nodes. Tap a group's eye in the left column to hide or show its nodes,
 press and hold to show only this one; which groups are hidden is kept in the browser, not in
 the map. A click on its colour changes the colour, a click on its name renames it. Fourteen strong
 colours are offered, since a node shows its colour only as a frame: the house colours
