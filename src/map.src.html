@@ -2606,7 +2606,6 @@
     const keys = groupKeys(), out = [];
     if (state.title) out.push("Map: " + state.title.replace(/\s+/g, " ").trim());
     for (const [c, k] of keys) out.push("Group: " + (state.legend[c] || "") + " #group-" + k + " #color-" + c.replace("#", "").toUpperCase() + (state.stickers && state.stickers[c] ? " #stickers" : ""));
-    if (out.length) out.push("");
     for (const n of state.nodes) {
       let line = (n.title || "…").replace(/\s+/g, " ").trim();
       if (n.note) line += " {{" + n.note.replace(/\r?\n/g, "\\n").replace(/\}\}/g, "} }") + "}}";
