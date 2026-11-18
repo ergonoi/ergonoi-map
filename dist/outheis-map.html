@@ -401,7 +401,7 @@
   </ul>
   <h3>More</h3>
   <div class="btnrow"><button class="ghost" id="setDemo">Load the example</button><button class="ghost" id="setJsonImport">Restore an old backup (.json)</button></div>
-  <p class="hint">Version 0.6.7 · <a href="https://github.com/outheis-labs/outheis-map" target="_blank" rel="noopener">outheis-map</a></p>
+  <p class="hint">Version 0.6.8 · <a href="https://github.com/outheis-labs/outheis-map" target="_blank" rel="noopener">outheis-map</a></p>
   <input type="file" id="mdInput" accept=".md,.markdown" class="hidden">
   <input type="file" id="txtInput" accept=".txt,text/plain" class="hidden">
   <input type="file" id="jsonInput" accept=".json" class="hidden">
@@ -742,7 +742,7 @@
       <button type="button" class="mrow" data-f="ver">${ICO.ver}Versions<span class="r">${versionCount || ""}</span></button>
       <button type="button" class="mrow" data-f="imp">${ICO.imp}Markmap …<span class="r">import, export</span></button>
       <button type="button" class="mrow" data-f="print">${ICO.print}Print or PDF …<span class="r">A4–A0</span></button>
-      <div class="narrow"><div class="sepl"></div><button type="button" class="mrow" data-f="set">${ICO.set}Help</button><p class="hint">Version 0.6.7</p></div>`;
+      <div class="narrow"><div class="sepl"></div><button type="button" class="mrow" data-f="set">${ICO.set}Help</button><p class="hint">Version 0.6.8</p></div>`;
     box.innerHTML = h;
   }
   let gPress = null, gPressAt = 0, gPressKey = "";
@@ -802,7 +802,7 @@
     const ar = b.dataset.ar;
     if (ar === "unpin") { checkpoint("Unpinned all"); state.nodes.forEach(n => n.pinned = false); save(); drawNodes(); renderSide(); renderDetail(); notice("All pins released.", true); return; }
     if (ar === "groups") { byGroups(); return; }
-    if (ar === "untangle") untangle(); else if (ar === "loosen") loosen(); else if (ar === "compact") compact(); else if (ar === "overlaps") checkReadability(); else if (ar === "fit") fitView(); else if (ar === "more") arrangeMenu(b);
+    if (ar === "untangle") untangle(); else if (ar === "loosen") spread(1.18); else if (ar === "compact") spread(0.85); else if (ar === "overlaps") checkReadability(); else if (ar === "fit") fitView(); else if (ar === "more") arrangeMenu(b);
     const f = b.dataset.f;
     if (f === "open") (canFile ? $("fileOpen") : $("fileLoad")).click();
     else if (f === "save") { if (!FILE.handle) (canFile ? $("fileNew") : $("fileDownload")).click(); else notice("Every change is written to " + FILE.name + "."); }
@@ -1991,6 +1991,28 @@
     else if (b.id === "prClose") $("dlgPrint").close();
   });
 
+  // Spacing − and +: the whole map is scaled about its centre, the nodes keep their size.
+  // A uniform scaling keeps every crossing as it is and the layout as you know it; after −,
+  // nodes that would overlap are pushed apart. Pinned nodes stay where they are.
+  function spread(f) {
+    const ns = state.nodes.filter(n => !isSticker(n) && !n.pinned);
+    if (ns.length < 2) return;
+    let cx = 0, cy = 0; for (const n of ns) { cx += n.x; cy += n.y; } cx /= ns.length; cy /= ns.length;
+    const before = ns.reduce((s, n) => s + Math.hypot(n.x - cx, n.y - cy), 0);
+    const P = new Map(ns.map(n => [n.id, { id: n.id, x: cx + (n.x - cx) * f, y: cy + (n.y - cy) * f }]));
+    if (f < 1) {
+      // push apart what would overlap (on copies, so the animation runs to the result)
+      const tmp = ns.map(n => ({ id: n.id, x: P.get(n.id).x, y: P.get(n.id).y, pinned: false, title: n.title, color: n.color }));
+      const real = new Map(ns.map(n => [n.id, { x: n.x, y: n.y }]));
+      for (const t of tmp) { const n = nodeById(t.id); n.x = t.x; n.y = t.y; }
+      resolveCollisions(state.nodes.filter(n => !isSticker(n)), 30);
+      for (const n of ns) { P.get(n.id).x = n.x; P.get(n.id).y = n.y; const r = real.get(n.id); n.x = r.x; n.y = r.y; }
+      const after = [...P.values()].reduce((s, q) => s + Math.hypot(q.x - cx, q.y - cy), 0);
+      if (after > before * 0.98) { notice("As compact as it goes without overlaps."); return; }
+    }
+    checkpoint(f > 1 ? "More space" : "Less space");
+    animateTo(new Map([...P].map(([id, q]) => [id, { x: q.x, y: q.y }])), () => { save(); drawEdges(); });
+  }
   // Spacing: 1 is as compact as readable; Loosen raises it in steps, Compact lowers it again.
   // Kept with the map in this browser.
   const spacing = () => state.spacing || 1;

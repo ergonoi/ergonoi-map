@@ -62,7 +62,8 @@ and the details come up as a sheet from below; on phones Map and Text are at the
   where it is; *Arrange → Untangle everything, pinned nodes too* lays out all of it. *Loosen* gives more room in
   steps, *Compact* closes the gaps again.
 - *Arrange* in the left column is a list like *File*: *Untangle*, *By groups*, *Spacing*
-  with − (Compact) and + (Loosen), *Check overlaps* (pushes overlapping nodes apart and marks
+  with − and + (the map is scaled about its centre, nodes keep their size, so the layout
+  and its crossings stay as they are; − pushes apart what would overlap; pinned nodes stay), *Check overlaps* (pushes overlapping nodes apart and marks
   crossing links), and two switches: *Unconnected* (nodes without any link stand out, the
   others step back; a link to a sticker counts) and *Group areas* (a soft area behind each
   group). *Fit* is always on the map, bottom right; *Arrange* appears there too when the
