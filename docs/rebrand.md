@@ -7,8 +7,9 @@ preview: whatever a clone would show can be tried in this repository first.
 A clone that is to show *ergonoi Map* by default:
 
 1. Clone or fork the repository into the ergonoi organisation.
-2. In `brand.json` set `"default": "ergonoi"` and `"site"` to the clone's own address (the
-   link preview needs it absolute). Nothing else changes: page title, wordmark, colours,
+2. In `brand.json` set `"default": "ergonoi"`, `"site"` to the clone's own address (the
+   link preview needs it absolute) and `"repo"` to the clone's repository (linked under
+   *About* in the settings). Nothing else changes: page title, wordmark, colours,
    manifest name, theme colour, the icons and the link preview (`icons/ergonoi-*.png`)
    follow.
 3. `python3 build.py`, or push to main: the Pages workflow builds and publishes `site/`
